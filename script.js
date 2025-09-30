@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentView: 'selector-view',
         exams: {},
         settings: {
-            timeLimit: 60,
+            timeLimit: 0,
             questionOrder: 'random',
             answerOrder: 'random',
         },

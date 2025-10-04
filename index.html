@@ -113,7 +113,14 @@
                         <button data-value="random">Aleatorio</button>
                     </div>
                 </div>
-                <button id="save-settings-btn">Guardar Ajustes</button>
+                <div class="form-group">
+                    <label>Panel Lateral de Preguntas (Escritorio):</label>
+                    <div class="btn-group" id="sidebar-setting-group">
+                        <button data-value="enabled">Activado</button>
+                        <button data-value="disabled">Desactivado</button>
+                    </div>
+                </div>
+                <!-- BOTÓN DE GUARDAR AJUSTES ELIMINADO -->
                 <p id="settings-saved-msg" class="hidden">Ajustes guardados.</p>
             </div>
         </div>
@@ -130,6 +137,17 @@
                 <button id="modal-check-btn">Comprobar Respuesta</button>
                 <p id="modal-correct-answer"></p>
             </div>
+        </div>
+    </div>
+    
+    <div id="question-sidebar" class="hidden">
+        <button id="sidebar-toggle-btn" title="Ocultar Panel">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div id="sidebar-content">
+            <!-- Las tarjetas de las preguntas se generarán aquí -->
         </div>
     </div>
 

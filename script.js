@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
             answerOrder: 'random',
             showSidebar: 'disabled',
             sidebarCollapsed: false,
+            showImages: 'yes',
         },
         stats: {},
         currentTest: null,
@@ -391,9 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
         questionCounter.textContent = `Pregunta ${test.currentIndex + 1} de ${test.questions.length}`;
         questionText.innerHTML = question.question_text;
 
-        if (question.image) {
+        if (appState.settings.showImages === 'yes' && question.image) {
             if (questionImage.src.split('/').pop() !== question.image) {
-                questionImage.src = `exams/images/${question.image}`;
+                questionImage.src = `images/${question.image}`;
             }
             questionImage.classList.remove('hidden');
         } else {
@@ -862,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateSettingsUI = () => {
-        const { timeLimit, questionOrder, answerOrder, showSidebar } = appState.settings;
+        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages } = appState.settings;
         document.querySelectorAll('#setting-time-group button').forEach(btn =>
             btn.classList.toggle('active', Number(btn.dataset.value) === timeLimit));
         document.querySelectorAll('#q-order-group button').forEach(btn =>
@@ -871,6 +872,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.toggle('active', btn.dataset.value === answerOrder));
         document.querySelectorAll('#sidebar-setting-group button').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.value === showSidebar));
+        document.querySelectorAll('#image-setting-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === showImages));
     };
 
     const saveSettings = () => {
@@ -878,8 +881,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const questionOrder = document.querySelector('#q-order-group .active').dataset.value;
         const answerOrder = document.querySelector('#a-order-group .active').dataset.value;
         const showSidebar = document.querySelector('#sidebar-setting-group .active').dataset.value;
+        const showImages = document.querySelector('#image-setting-group .active').dataset.value;
 
-        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar };
+        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages };
 
         saveState();
         updateSidebarState();

@@ -1146,6 +1146,7 @@ window.examData_H12_811_V1_0_ENU_882 = {
         "D. This data frame is an Ethernet II frame"
       ],
       "correct_answers": [
+        "A",
         "B",
         "D"
       ],

@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let modalCurrentQuestion = null;
     let touchStartX = 0;
     let touchStartY = 0;
+    let longPressTimer = null;
 
     // --- DOM ELEMENTS ---
     const views = {
@@ -820,6 +821,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const handleTouchStartOnQuestion = (e) => {
+        // Solo se activa en la vista del test y si no hay una respuesta ya revelada
+        if (appState.currentView !== 'test-view' || appState.currentTest.answersRevealed[appState.currentTest.currentIndex]) return;
+    
+        // Inicia un temporizador. Si se mantiene presionado por 500ms, muestra la respuesta.
+        longPressTimer = setTimeout(() => {
+            showAnswer();
+        }, 500); // 500ms = medio segundo
+    };
+    
+    const handleTouchEndOnQuestion = (e) => {
+        // Si el usuario levanta el dedo, cancela el temporizador para evitar que se muestre la respuesta.
+        clearTimeout(longPressTimer);
+    };
+    
+    const handleTouchMoveOnQuestion = (e) => {
+        // Si el usuario mueve el dedo (por ejemplo, para hacer scroll), también cancelamos la acción.
+        clearTimeout(longPressTimer);
+    };
+
     const handleTouchStart = (e) => {
         if (appState.currentView !== 'test-view' || !appState.currentTest) return;
         touchStartX = e.changedTouches[0].screenX;
@@ -849,20 +870,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setupSettingsView();
         setupModalListeners();
         loadExams();
-
+    
         document.addEventListener('keydown', handleKeyPress);
+        
+        // Estos son para el swipe entre preguntas en todo el body
         document.body.addEventListener('touchstart', handleTouchStart, { passive: true });
         document.body.addEventListener('touchend', handleTouchEnd, { passive: true });
-
+    
+        // --- CAMBIO CLAVE: AÑADIR LISTENERS PARA EL "LONG PRESS" EN EL CONTENEDOR DE LA PREGUNTA ---
+        questionContainer.addEventListener('touchstart', handleTouchStartOnQuestion, { passive: true });
+        questionContainer.addEventListener('touchend', handleTouchEndOnQuestion);
+        questionContainer.addEventListener('touchmove', handleTouchMoveOnQuestion);
+    
+    
         navButtons.selector.addEventListener('click', () => handleNavClick('selector-view'));
         navButtons.stats.addEventListener('click', () => handleNavClick('stats-view'));
         navButtons.settings.addEventListener('click', () => handleNavClick('settings-view'));
-
+    
         prevBtn.addEventListener('click', () => changeQuestion(-1));
         nextBtn.addEventListener('click', () => changeQuestion(1));
         finishBtn.addEventListener('click', finishTest);
         showAnswerBtn.addEventListener('click', showAnswer);
-
+    
         backToHomeBtn.addEventListener('click', () => showView('selector-view'));
         restartTestBtn.addEventListener('click', () => {
             if (appState.currentTest) {
@@ -874,6 +903,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetStatsBtn.addEventListener('click', resetStatistics);
         resumeBtn.addEventListener('click', resumeTest);
     };
-
+    
     init();
 });

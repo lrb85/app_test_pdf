@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test App</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header>
         <h1>Test App</h1>
@@ -43,7 +45,7 @@
             </div>
             <div class="test-navigation">
                 <div>
-                     <button id="show-answer-btn">Mostrar Respuesta</button>
+                    <button id="show-answer-btn">Mostrar Respuesta</button>
                 </div>
                 <div>
                     <button id="prev-btn">Anterior</button>
@@ -73,7 +75,7 @@
                 <div class="form-group">
                     <label for="stats-exam-select">Selecciona un examen:</label>
                     <div class="custom-select-wrapper">
-                         <select id="stats-exam-select">
+                        <select id="stats-exam-select">
                             <option value="all">Estadísticas Generales</option>
                         </select>
                     </div>
@@ -89,7 +91,7 @@
         <div id="settings-view" class="view">
             <h2>Ajustes del Examen</h2>
             <div class="settings-form">
-                 <div class="form-group">
+                <div class="form-group">
                     <label>Tiempo Límite para el Examen:</label>
                     <div class="btn-group" id="setting-time-group">
                         <button data-value="0">Sin límite</button>
@@ -120,6 +122,13 @@
                         <button data-value="disabled">Desactivado</button>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Mostrar Imágenes en las Preguntas:</label>
+                    <div class="btn-group" id="image-setting-group">
+                        <button data-value="yes">Sí</button>
+                        <button data-value="no">No</button>
+                    </div>
+                </div>
                 <!-- BOTÓN DE GUARDAR AJUSTES ELIMINADO -->
                 <p id="settings-saved-msg" class="hidden">Ajustes guardados.</p>
             </div>
@@ -139,7 +148,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="question-sidebar" class="hidden">
         <button id="sidebar-toggle-btn" title="Ocultar Panel">
             <span></span>
@@ -176,4 +185,5 @@
     <script src="exams/H12-811_V1.0_parcial_851_900.js"></script>
     <script src="exams/H12-811_V1.0_parcial_901_931.js"></script>
 </body>
+
 </html>

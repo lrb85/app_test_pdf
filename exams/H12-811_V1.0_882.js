@@ -12249,7 +12249,7 @@ window.examData_H12_811_V1_0_ENU_882 = {
         "B. False"
       ],
       "correct_answers": [
-        "A"
+        "B"
       ],
       "type": "single",
       "image": "image_806.png"

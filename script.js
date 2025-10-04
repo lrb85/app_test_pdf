@@ -93,11 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settings) {
             appState.settings = { ...appState.settings, ...JSON.parse(settings) };
         }
-
+    
         const stats = localStorage.getItem('testAppStats');
         if (stats) appState.stats = JSON.parse(stats);
-
+    
         const pausedTest = localStorage.getItem('testAppPausedTest');
+        
+        // Si se encuentra un examen pausado...
         if (pausedTest) {
             appState.currentTest = JSON.parse(pausedTest);
             resumeContainer.classList.remove('hidden');
@@ -229,28 +231,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTest = (examCode, questionCount, specificQuestions = null, isPractice = false) => {
             localStorage.removeItem('testAppPausedTest');
             resumeContainer.classList.add('hidden');
-
+        
             const exam = appState.exams[examCode];
             let questions;
-
+        
             if (specificQuestions) {
                 questions = JSON.parse(JSON.stringify(specificQuestions));
             } else {
                 let allQuestionsCopy = JSON.parse(JSON.stringify(exam.questions));
-
+        
                 if (appState.settings.questionOrder === 'random') {
                     shuffleArray(allQuestionsCopy);
                 }
-
+        
                 questions = allQuestionsCopy.slice(0, questionCount);
             }
-
+        
             if (appState.settings.answerOrder === 'random') {
                 questions.forEach(question => {
                     if (!question.options || question.options.length < 2) return;
                     const originalOptionDetails = question.options.map(opt => ({
                         letter: opt.substring(0, 1),
-                                                                               text: opt.substring(opt.indexOf('.') + 1).trim()
+                        text: opt.substring(opt.indexOf('.') + 1).trim()
                     }));
                     const textsToShuffle = originalOptionDetails.map(opt => opt.text);
                     shuffleArray(textsToShuffle);
@@ -270,20 +272,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     question.correct_answers = newCorrectAnswers;
                 });
             }
-
+        
             appState.currentTest = {
                 examCode,
                 examName: exam.exam_name,
                 questions,
                 userAnswers: Array(questions.length).fill(null),
-                          answersRevealed: Array(questions.length).fill(false), // <-- CAMBIO APLICADO
-                          currentIndex: 0,
-                          startTime: Date.now(),
-                          timeElapsed: 0,
-                          isFinished: false,
-                          isPracticeFailedTest: isPractice,
+                answersRevealed: Array(questions.length).fill(false),
+                currentIndex: 0,
+                startTime: Date.now(),
+                timeElapsed: 0,
+                isFinished: false,
+                isPracticeFailedTest: isPractice,
             };
-
+        
             startTimer();
             renderQuestion();
             showView('test-view');
@@ -420,14 +422,14 @@ document.addEventListener('DOMContentLoaded', () => {
             stopTimer();
             const test = appState.currentTest;
             test.isFinished = true;
-
+        
             let correctCount = 0;
             const examStats = appState.stats[test.examCode] || { attempts: [], failedQuestions: {} };
-
+        
             test.questions.forEach((q, index) => {
                 const userAnswer = test.userAnswers[index] || [];
                 const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
-
+        
                 if (isCorrect) {
                     correctCount++;
                     if (test.isPracticeFailedTest) {
@@ -439,19 +441,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-
+        
             const score = (correctCount / test.questions.length) * 100;
             examStats.attempts.push({
                 date: new Date().toISOString(),
-                                    score: score,
-                                    time: test.timeElapsed,
-                                    questionCount: test.questions.length
+                score: score,
+                time: test.timeElapsed,
+                questionCount: test.questions.length
             });
             appState.stats[test.examCode] = examStats;
-
+        
             saveState();
             renderExamSelector();
             renderResults(score, correctCount);
+            
             localStorage.removeItem('testAppPausedTest');
             resumeContainer.classList.add('hidden');
             showView('results-view');

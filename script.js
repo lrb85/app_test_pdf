@@ -97,9 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const saveCurrentTestState = () => {
         if (appState.currentTest && !appState.currentTest.isFinished) {
+            const additionalTime = appState.currentTest.startTime ? (Date.now() - appState.currentTest.startTime) / 1000 : 0;
+
             const testStateToSave = {
                 ...appState.currentTest,
-                timeElapsed: appState.currentTest.timeElapsed + ((Date.now() - appState.currentTest.startTime) / 1000)
+                timeElapsed: appState.currentTest.timeElapsed + additionalTime
             };
             localStorage.setItem('testAppPausedTest', JSON.stringify(testStateToSave));
         }

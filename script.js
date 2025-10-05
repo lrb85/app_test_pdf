@@ -689,19 +689,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const displayStatsForSelection = () => {
         const selectedCode = statsExamSelect.value;
-        const attempts = selectedCode === 'all' ?
-        Object.values(appState.stats).flatMap(s => s.attempts) :
-        (appState.stats[selectedCode]?.attempts || []);
-
+    
+        // Parte 1: Calcular estadísticas de los intentos (las tarjetas superiores)
+        const attempts = selectedCode === 'all'
+            ? Object.values(appState.stats).flatMap(s => s.attempts)
+            : (appState.stats[selectedCode]?.attempts || []);
         displayCalculatedStats(attempts);
-
+    
+        // Parte 2: Mostrar evaluación de preparación y preguntas falladas
         if (selectedCode !== 'all') {
             displayExamSpecificStats(selectedCode);
         } else {
-            readinessContainer.innerHTML = '';
-            readinessContainer.className = 'neutral';
-            readinessContainer.innerHTML = '<h4>Evaluación de Preparación</h4><p>Selecciona un examen para ver tu nivel de preparación.</p>';
-            failedQuestionsList.innerHTML = '<li>Selecciona un examen para ver las preguntas más falladas.</li>';
+            // Lógica para "Estadísticas Generales"
+            // A) Evaluación de preparación general
+            const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5); // Tomar los últimos 5 intentos grandes
+            if (recentAttempts.length > 0) {
+                const recentAvgScore = recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length;
+                if (recentAvgScore >= 85) {
+                    readinessContainer.className = 'prepared';
+                    readinessContainer.innerHTML = `<h4>¡Estás bien preparado en general!</h4><p>Tu puntuación media reciente en todos los exámenes es <strong>${formatPercentage(recentAvgScore)}</strong>. ¡Excelente trabajo!</p>`;
+                } else {
+                    readinessContainer.className = 'unprepared';
+                    readinessContainer.innerHTML = `<h4>Necesitas repasar algunos temas.</h4><p>Tu media de aciertos general es del <strong>${formatPercentage(recentAvgScore)}</strong> (se requiere 85%). Revisa las preguntas más falladas para identificar tus áreas débiles.</p>`;
+                }
+            } else {
+                readinessContainer.className = 'neutral';
+                readinessContainer.innerHTML = '<h4>Evaluación de Preparación General</h4><p>Realiza más tests (de al menos 30 preguntas) para una evaluación general precisa.</p>';
+            }
+    
+            // B) Preguntas más falladas de todos los exámenes
+            const aggregatedFailed = {};
+            Object.values(appState.stats).forEach(examStat => {
+                for (const qId in examStat.failedQuestions) {
+                    const count = examStat.failedQuestions[qId];
+                    aggregatedFailed[qId] = (aggregatedFailed[qId] || 0) + count;
+                }
+            });
+    
+            const sortedFailed = Object.entries(aggregatedFailed).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            
+            failedQuestionsList.innerHTML = '';
+            if (sortedFailed.length === 0) {
+                failedQuestionsList.innerHTML = '<li>¡Felicidades! No tienes preguntas falladas registradas.</li>';
+            } else {
+                const allQuestionsById = new Map();
+                Object.values(appState.exams).forEach(exam => {
+                    exam.questions.forEach(q => {
+                        if (!allQuestionsById.has(q.id)) {
+                            allQuestionsById.set(q.id, q);
+                        }
+                    });
+                });
+    
+                sortedFailed.forEach(([qId, count]) => {
+                    const question = allQuestionsById.get(parseInt(qId));
+                    if (question) {
+                        const li = document.createElement('li');
+                        li.className = 'failed-question-item';
+                        li.innerHTML = `
+                        <div class="failure-count" title="${count} veces fallada">
+                        <span class="count-number">${count}</span>
+                        <span class="count-label">Fallos</span>
+                        </div>
+                        <div class="failed-question-text">${question.question_text}</div>
+                        `;
+                        li.addEventListener('click', () => openModalWithQuestion(question));
+                        failedQuestionsList.appendChild(li);
+                    }
+                });
+            }
         }
     };
 

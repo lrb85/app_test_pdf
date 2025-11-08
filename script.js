@@ -972,13 +972,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob([pausedTestJSON], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0, 10);
+            
+            // **MODIFICACIÓN: Formato de fecha y hora para el nombre del archivo**
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-'); // YYYY-MM-DD_HH-MM-SS
+            
             a.href = url;
             a.download = `progreso_${pausedTest.examCode}_${timestamp}.json`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            
+            // **MODIFICACIÓN: Retardo para compatibilidad móvil**
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
 
             importExportMsg.textContent = 'Progreso exportado con éxito.';
             importExportMsg.style.color = 'var(--success-color)';

@@ -3503,7 +3503,7 @@ window.examData_H12_811_V1_0_extra = {
       "options": [
         "A. Maintenance cost",
         "B. Total Cost of Ownership",
-        "c. Operating costs",
+        "C. Operating costs",
         "D. Operation and maintenance costs"
       ],
       "correct_answers": [

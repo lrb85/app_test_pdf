@@ -123,15 +123,28 @@
                             <button data-value="disabled">Desactivado</button>
                         </div>
                     </div>
-                    <div class="form-group">
+                     <div class="form-group">
                         <label>Mostrar Imágenes en las Preguntas:</label>
                         <div class="btn-group" id="image-setting-group">
                             <button data-value="yes">Sí</button>
                             <button data-value="no">No</button>
                         </div>
                     </div>
-                    <p id="settings-saved-msg" class="hidden">Ajustes guardados.</p>
                 </div>
+
+                <!-- Sección de Importar/Exportar -->
+                <div class="settings-section" style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+                    <h3>Sincronizar Progreso</h3>
+                    <p>Exporta tu examen en curso para continuar en otro dispositivo, o importa un progreso previo.</p>
+                    <div class="btn-group">
+                        <button id="export-progress-btn">Exportar Progreso</button>
+                        <button id="import-progress-btn">Importar Progreso</button>
+                        <input type="file" id="import-file-input" class="hidden" accept=".json">
+                    </div>
+                    <p id="import-export-msg" class="hidden" style="margin-top: 1rem; font-weight: bold;"></p>
+                </div>
+
+                <p id="settings-saved-msg" class="hidden">Ajustes guardados.</p>
             </div>
         </main>
         <div id="question-sidebar" class="hidden">

@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarContent = document.getElementById('sidebar-content');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const questionText = document.getElementById('question-text');
-    // ELEMENTO MODIFICADO
     const questionImageContainer = document.getElementById('question-image-container');
     const optionsContainer = document.getElementById('options-container');
     const prevBtn = document.getElementById('prev-btn');
@@ -74,6 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalOptionsContainer = document.getElementById('modal-options-container');
     const modalCheckBtn = document.getElementById('modal-check-btn');
     const modalCorrectAnswer = document.getElementById('modal-correct-answer');
+    const exportProgressBtn = document.getElementById('export-progress-btn');
+    const importProgressBtn = document.getElementById('import-progress-btn');
+    const importFileInput = document.getElementById('import-file-input');
+    const importExportMsg = document.getElementById('import-export-msg');
 
 
     // --- UTILITY FUNCTIONS ---
@@ -119,11 +122,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const pausedTest = localStorage.getItem('testAppPausedTest');
         if (pausedTest) {
-            appState.currentTest = JSON.parse(pausedTest);
-            resumeContainer.classList.remove('hidden');
+            try {
+                appState.currentTest = JSON.parse(pausedTest);
+                 // Solo mostrar el botón si el examen no está finalizado
+                if (appState.currentTest && !appState.currentTest.isFinished) {
+                    resumeContainer.classList.remove('hidden');
+                } else {
+                    resumeContainer.classList.add('hidden');
+                    localStorage.removeItem('testAppPausedTest'); // Limpiar si es un examen finalizado
+                }
+            } catch (e) {
+                console.error("Error parsing paused test data:", e);
+                localStorage.removeItem('testAppPausedTest');
+            }
         }
     };
-
+    
     // --- Lógica de Visibilidad del Panel Lateral ---
     const updateSidebarState = () => {
         const shouldBeVisible = appState.settings.showSidebar === 'enabled' && appState.currentView === 'test-view';
@@ -152,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (viewId === 'settings-view') {
             updateSettingsUI();
+            importExportMsg.classList.add('hidden');
         }
     };
 
@@ -288,14 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.addEventListener('click', () => {
                 const clickedIndex = Number(card.dataset.index);
 
-                // Si hacemos clic en una pregunta diferente a la actual
                 if (test.currentIndex !== clickedIndex) {
-                    // Marcar la pregunta que estamos dejando como "revisitada", bloqueándola para futuros cambios.
                     if (test.revisitedFromSidebar[test.currentIndex]) {
                         test.isLocked[test.currentIndex] = true;
                     }
-
-                    // Navegar a la nueva pregunta y marcarla como "revisitada"
                     test.currentIndex = clickedIndex;
                     test.revisitedFromSidebar[test.currentIndex] = true;
                     renderQuestion();
@@ -358,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
             questions,
             userAnswers: Array(questions.length).fill(null),
             answersRevealed: Array(questions.length).fill(false),
-            // NUEVO: Estados para la lógica de "una oportunidad"
             revisitedFromSidebar: Array(questions.length).fill(false),
             isLocked: Array(questions.length).fill(false),
             currentIndex: 0,
@@ -395,17 +405,15 @@ document.addEventListener('DOMContentLoaded', () => {
         questionCounter.textContent = `Pregunta ${test.currentIndex + 1} de ${test.questions.length}`;
         questionText.innerHTML = question.question_text;
 
-        // --- LÓGICA DE IMAGEN MODIFICADA ---
-        questionImageContainer.innerHTML = ''; // Limpiar imágenes anteriores
+        questionImageContainer.innerHTML = '';
         questionImageContainer.classList.add('hidden');
 
         if (appState.settings.showImages === 'yes' && question.image) {
-            // Convertir a array para manejar tanto string como array de strings
             const images = Array.isArray(question.image) ? question.image : [question.image];
             
             if (images.length > 0) {
                 images.forEach(imgSrc => {
-                    if(imgSrc) { // Añadir una comprobación por si hay valores nulos/vacíos
+                    if(imgSrc) {
                         const imgElement = document.createElement('img');
                         imgElement.src = `images/${imgSrc}`;
                         imgElement.alt = "Imagen de la pregunta";
@@ -415,11 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 questionImageContainer.classList.remove('hidden');
             }
         }
-        // --- FIN DE LÓGICA DE IMAGEN MODIFICADA ---
 
         optionsContainer.innerHTML = '';
         question.options.forEach(optionText => {
-            // CAMBIO: Crear <button> en lugar de <div>
             const optionButton = document.createElement('button');
             optionButton.className = 'option';
             optionButton.textContent = optionText;
@@ -434,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
             optionsContainer.appendChild(optionButton);
         });
 
-        // NUEVO: Bloquear visualmente las opciones si la pregunta está bloqueada
         if (test.isLocked[test.currentIndex]) {
             optionsContainer.classList.add('locked');
         } else {
@@ -453,7 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderQuestionSidebar();
         
-        // MODIFICACIÓN: Se añade el autoscroll para el panel lateral.
         const currentCard = sidebarContent.querySelector('.current-question');
         if (currentCard) {
             currentCard.scrollIntoView({
@@ -465,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectAnswer = (optionButton) => {
         const test = appState.currentTest;
-        // MODIFICADO: Añadida comprobación de bloqueo
         if (test.answersRevealed[test.currentIndex] || test.isLocked[test.currentIndex]) {
             return;
         }
@@ -490,14 +493,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         test.userAnswers[test.currentIndex] = currentSelection.sort();
         saveCurrentTestState();
-        // No actualizamos el sidebar aquí para que el color no cambie al instante
     };
 
     const changeQuestion = (direction) => {
         const test = appState.currentTest;
         if (!test || questionContainer.classList.contains('animating')) return;
 
-        // MODIFICACIÓN CLAVE: Bloquear la pregunta actual si fue revisitada
         if (test.revisitedFromSidebar[test.currentIndex]) {
             test.isLocked[test.currentIndex] = true;
         }
@@ -706,19 +707,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayStatsForSelection = () => {
         const selectedCode = statsExamSelect.value;
     
-        // Parte 1: Calcular estadísticas de los intentos (las tarjetas superiores)
         const attempts = selectedCode === 'all'
             ? Object.values(appState.stats).flatMap(s => s.attempts)
             : (appState.stats[selectedCode]?.attempts || []);
         displayCalculatedStats(attempts);
     
-        // Parte 2: Mostrar evaluación de preparación y preguntas falladas
         if (selectedCode !== 'all') {
             displayExamSpecificStats(selectedCode);
         } else {
-            // Lógica para "Estadísticas Generales"
-            // A) Evaluación de preparación general
-            const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5); // Tomar los últimos 5 intentos grandes
+            const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5);
             if (recentAttempts.length > 0) {
                 const recentAvgScore = recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length;
                 if (recentAvgScore >= 85) {
@@ -733,7 +730,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 readinessContainer.innerHTML = '<h4>Evaluación de Preparación General</h4><p>Realiza más tests (de al menos 30 preguntas) para una evaluación general precisa.</p>';
             }
     
-            // B) Preguntas más falladas de todos los exámenes
             const aggregatedFailed = {};
             Object.values(appState.stats).forEach(examStat => {
                 for (const qId in examStat.failedQuestions) {
@@ -922,13 +918,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#settings-view .btn-group button').forEach(button => {
             button.addEventListener('click', () => {
                 const group = button.parentElement;
-                // Si el botón ya está activo, no hacemos nada
                 if (button.classList.contains('active')) return;
 
                 group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 
-                // Llamamos a guardar ajustes automáticamente
                 saveSettings();
             });
         });
@@ -959,6 +953,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
         saveState();
         updateSidebarState();
+    };
+    
+    // --- IMPORT/EXPORT LOGIC ---
+    const exportTestState = () => {
+        const pausedTestJSON = localStorage.getItem('testAppPausedTest');
+        importExportMsg.classList.add('hidden');
+
+        if (!pausedTestJSON) {
+            importExportMsg.textContent = 'No hay ningún examen en curso para exportar.';
+            importExportMsg.style.color = 'var(--danger-color)';
+            importExportMsg.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const pausedTest = JSON.parse(pausedTestJSON);
+            const blob = new Blob([pausedTestJSON], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `progreso_${pausedTest.examCode}_${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            importExportMsg.textContent = 'Progreso exportado con éxito.';
+            importExportMsg.style.color = 'var(--success-color)';
+            importExportMsg.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error al exportar el estado:', error);
+            importExportMsg.textContent = 'Error al exportar.';
+            importExportMsg.style.color = 'var(--danger-color)';
+            importExportMsg.classList.remove('hidden');
+        }
+    };
+
+    const importTestState = (event) => {
+        const file = event.target.files[0];
+        importExportMsg.classList.add('hidden');
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                const importedState = JSON.parse(content);
+
+                // Validation
+                if (
+                    importedState.examCode &&
+                    appState.exams[importedState.examCode] &&
+                    Array.isArray(importedState.questions) &&
+                    typeof importedState.currentIndex === 'number' &&
+                    !importedState.isFinished
+                ) {
+                    localStorage.setItem('testAppPausedTest', content);
+                    loadState(); // Reload state to update UI
+                    
+                    importExportMsg.textContent = '¡Progreso importado con éxito! Ahora puedes continuar el examen.';
+                    importExportMsg.style.color = 'var(--success-color)';
+                    importExportMsg.classList.remove('hidden');
+                    
+                    showView('selector-view'); // Go to home to see the resume button
+                } else {
+                    let errorMsg = 'El archivo de importación es inválido o no compatible.';
+                    if(importedState.isFinished) errorMsg = 'No se puede importar un examen ya finalizado.';
+                    else if (importedState.examCode && !appState.exams[importedState.examCode]) errorMsg = `El examen '${importedState.examCode}' no se encuentra en esta aplicación.`;
+                    throw new Error(errorMsg);
+                }
+            } catch (error) {
+                console.error('Error al importar el estado:', error);
+                importExportMsg.textContent = `Error: ${error.message}`;
+                importExportMsg.style.color = 'var(--danger-color)';
+                importExportMsg.classList.remove('hidden');
+            } finally {
+                importFileInput.value = ''; // Reset for re-uploading
+            }
+        };
+
+        reader.onerror = () => {
+            importExportMsg.textContent = 'Error al leer el archivo.';
+            importExportMsg.style.color = 'var(--danger-color)';
+            importExportMsg.classList.remove('hidden');
+            importFileInput.value = '';
+        };
+
+        reader.readAsText(file);
     };
 
     // --- INPUT HANDLERS (KEYBOARD & TOUCH) ---
@@ -1033,12 +1116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const handleDoubleClick = (e) => {
-        if (appState.currentView === 'test-view' && appState.currentTest && !appState.currentTest.answersRevealed[appState.currentTest.currentIndex] && !appState.currentTest.isLocked[appState.currentTest.currentIndex]) {
-            showAnswer();
-        }
-    };
-
     const handleBodyTouchStart = (e) => {
         if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.answersRevealed[appState.currentTest.currentIndex] || appState.currentTest.isLocked[appState.currentTest.currentIndex]) {
             return;
@@ -1054,15 +1131,11 @@ document.addEventListener('DOMContentLoaded', () => {
             lastTapTime = 0;
             return;
         }
-
         lastTapTime = currentTime;
-
-        longPressTimer = setTimeout(() => {
-            showAnswer();
-        }, 500);
+        longPressTimer = setTimeout(() => { showAnswer(); }, 500);
     };
 
-    const handleBodyTouchEndOrMove = (e) => {
+    const handleBodyTouchEndOrMove = () => {
         clearTimeout(longPressTimer);
     };
     
@@ -1080,33 +1153,16 @@ document.addEventListener('DOMContentLoaded', () => {
         loadExams();
         updateSidebarState();
 
-        // --- INICIO: NUEVO CÓDIGO para posicionamiento dinámico del panel lateral ---
         const header = document.querySelector('header');
-
         const adjustSidebarPosition = () => {
-            // Se asegura de que los elementos existan antes de manipularlos
             if (!header || !questionSidebar) return;
-
             const headerHeight = header.offsetHeight;
             const headerRect = header.getBoundingClientRect();
-
-            // Cuando la parte inferior del header ha pasado por encima del borde superior de la ventana
-            if (headerRect.bottom <= 0) {
-                // El header no está visible, se fija el panel arriba del todo
-                questionSidebar.style.top = '0px';
-            } else {
-                // El header está visible, se posiciona el panel justo debajo de él
-                questionSidebar.style.top = `${headerHeight}px`;
-            }
+            questionSidebar.style.top = (headerRect.bottom <= 0) ? '0px' : `${headerHeight}px`;
         };
-
-        // Establece la posición inicial al cargar la página
         adjustSidebarPosition();
 
-        // Actualiza la posición cada vez que el usuario hace scroll
         window.addEventListener('scroll', adjustSidebarPosition);
-        // --- FIN: NUEVO CÓDIGO ---
-
         document.addEventListener('keydown', handleKeyPress);
         document.body.addEventListener('touchstart', handleBodyTouchStart, { passive: false });
         document.body.addEventListener('touchend', handleBodyTouchEndOrMove);
@@ -1115,16 +1171,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         sidebarToggleBtn.addEventListener('click', handleSidebarToggle);
-
         navButtons.selector.addEventListener('click', () => handleNavClick('selector-view'));
         navButtons.stats.addEventListener('click', () => handleNavClick('stats-view'));
         navButtons.settings.addEventListener('click', () => handleNavClick('settings-view'));
-
         prevBtn.addEventListener('click', () => changeQuestion(-1));
         nextBtn.addEventListener('click', () => changeQuestion(1));
         finishBtn.addEventListener('click', finishTest);
         showAnswerBtn.addEventListener('click', showAnswer);
-
         backToHomeBtn.addEventListener('click', () => showView('selector-view'));
         restartTestBtn.addEventListener('click', () => {
             if (appState.currentTest) {
@@ -1132,10 +1185,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // El botón de guardar ya no existe, por lo que se elimina su listener
         statsExamSelect.addEventListener('change', displayStatsForSelection);
         resetStatsBtn.addEventListener('click', resetStatistics);
         resumeBtn.addEventListener('click', resumeTest);
+
+        // Listeners for Import/Export
+        exportProgressBtn.addEventListener('click', exportTestState);
+        importProgressBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', importTestState);
     };
 
     init();

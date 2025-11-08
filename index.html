@@ -11,16 +11,6 @@
 <body>
     <header>
         <h1>Test App</h1>
-        <div id="auth-container">
-            <div id="user-status" class="hidden">
-                <span id="user-email"></span>
-                <button id="logout-btn">Cerrar Sesión</button>
-            </div>
-            <div id="login-container">
-                <p>Inicia sesión para sincronizar tu progreso entre dispositivos.</p>
-                <button id="login-anonymous-btn">Iniciar Sesión Anónima</button>
-            </div>
-        </div>
         <nav>
             <button id="nav-selector">Realizar Examen</button>
             <button id="nav-stats">Estadísticas</button>
@@ -127,13 +117,6 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Guardado de Examen Pausado:</label>
-                        <div class="btn-group" id="sync-setting-group">
-                            <button data-value="sync">Sincronizado (Multi-dispositivo)</button>
-                            <button data-value="local">Local (Este dispositivo)</button>
-                        </div>
-                    </div>
-                    <div class="form-group">
                         <label>Panel Lateral de Preguntas (Escritorio):</label>
                         <div class="btn-group" id="sidebar-setting-group">
                             <button data-value="enabled">Activado</button>
@@ -177,9 +160,7 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
     <script src="script.js"></script>
     <script src="exams/H12-811_V1.0_full.js"></script>
     <script src="exams/H12-811_V1.0_882.js"></script>

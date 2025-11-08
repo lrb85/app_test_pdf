@@ -1,33 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- INICIO: CONFIGURACIÓN Y SERVICIOS DE FIREBASE ---
-    // ESTA ES TU CONFIGURACIÓN PERSONALIZADA DE FIREBASE
-    const firebaseConfig = {
-        apiKey: "AIzaSyD8ylepVkzwrocqQy-xMXhokfXhnOeY1dg",
-        authDomain: "huawei-test-a299c.firebaseapp.com",
-        projectId: "huawei-test-a299c",
-        storageBucket: "huawei-test-a299c.firebasestorage.app",
-        messagingSenderId: "135933806476",
-        appId: "1:135933806476:web:63726d908397072b5a38a9",
-        measurementId: "G-28EQVGQS2B"
-      };
-
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    // --- FIN: CONFIGURACIÓN Y SERVICIOS DE FIREBASE ---
-
-
     // --- STATE MANAGEMENT ---
     let appState = {
-        user: null,
         currentView: 'selector-view',
         exams: {},
         settings: {
             timeLimit: 0,
             questionOrder: 'random',
             answerOrder: 'random',
-            syncMode: 'sync', // 'sync' o 'local'. Por defecto 'sync'.
             showSidebar: 'disabled',
             sidebarCollapsed: false,
             showImages: 'yes',
@@ -58,12 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
         stats: document.getElementById('nav-stats'),
         settings: document.getElementById('nav-settings'),
     };
-    const authContainer = document.getElementById('auth-container');
-    const userStatusContainer = document.getElementById('user-status');
-    const loginContainer = document.getElementById('login-container');
-    const userEmailSpan = document.getElementById('user-email');
-    const loginAnonymousBtn = document.getElementById('login-anonymous-btn');
-    const logoutBtn = document.getElementById('logout-btn');
     const examListContainer = document.getElementById('exam-list-container');
     const loaderStatus = document.getElementById('loader-status');
     const testTitle = document.getElementById('test-title');
@@ -74,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarContent = document.getElementById('sidebar-content');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const questionText = document.getElementById('question-text');
+    // ELEMENTO MODIFICADO
     const questionImageContainer = document.getElementById('question-image-container');
     const optionsContainer = document.getElementById('options-container');
     const prevBtn = document.getElementById('prev-btn');
@@ -102,107 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCorrectAnswer = document.getElementById('modal-correct-answer');
 
 
-    // --- LÓGICA DE AUTENTICACIÓN Y DATOS ---
-    const onAuthStateChanged = (user) => {
-        appState.user = user ? { uid: user.uid, isAnonymous: user.isAnonymous } : null;
-        updateAuthUI();
-        loadPausedTest(); // Comprueba si hay un examen pausado según la configuración actual.
-    };
-    
-    const updateAuthUI = () => {
-        if (appState.user) {
-            userEmailSpan.textContent = `Sesión iniciada como: Anónimo (${appState.user.uid.substring(0, 6)}...)`;
-            userStatusContainer.classList.remove('hidden');
-            loginContainer.classList.add('hidden');
-        } else {
-            userStatusContainer.classList.add('hidden');
-            loginContainer.classList.remove('hidden');
-        }
-    };
-
-    const signInAnonymously = () => auth.signInAnonymously().catch(error => console.error("Error al iniciar sesión:", error));
-    const signOut = () => auth.signOut();
-
-    // --- LÓGICA DE GUARDADO/CARGA CONDICIONAL ---
-
-    // Funciones específicas de Firestore
-    const saveTestToFirestore = () => {
-        if (!appState.user || !appState.currentTest || appState.currentTest.isFinished) return;
-        const additionalTime = appState.currentTest.startTime ? (Date.now() - appState.currentTest.startTime) / 1000 : 0;
-        const testStateToSave = {
-            ...appState.currentTest,
-            timeElapsed: appState.currentTest.timeElapsed + additionalTime
-        };
-        db.collection('pausedExams').doc(appState.user.uid).set(testStateToSave).catch(e => console.error("Error guardando en Firestore:", e));
-    };
-    const loadTestFromFirestore = async () => {
-        if (!appState.user) return null;
-        try {
-            const doc = await db.collection('pausedExams').doc(appState.user.uid).get();
-            return doc.exists ? doc.data() : null;
-        } catch (error) {
-            console.error("Error cargando desde Firestore:", error);
-            return null;
-        }
-    };
-    const clearTestFromFirestore = () => {
-        if (appState.user) {
-            db.collection('pausedExams').doc(appState.user.uid).delete().catch(e => console.error("Error eliminando de Firestore:", e));
-        }
-    };
-
-    // Funciones específicas de LocalStorage
-    const saveTestToLocalStorage = () => {
-        if (!appState.currentTest || appState.currentTest.isFinished) return;
-        const additionalTime = appState.currentTest.startTime ? (Date.now() - appState.currentTest.startTime) / 1000 : 0;
-        const testStateToSave = {
-            ...appState.currentTest,
-            timeElapsed: appState.currentTest.timeElapsed + additionalTime
-        };
-        localStorage.setItem('testAppPausedTest', JSON.stringify(testStateToSave));
-    };
-    const loadTestFromLocalStorage = () => {
-        const pausedTest = localStorage.getItem('testAppPausedTest');
-        return pausedTest ? JSON.parse(pausedTest) : null;
-    };
-    const clearTestFromLocalStorage = () => {
-        localStorage.removeItem('testAppPausedTest');
-    };
-
-    // Funciones "Dispatcher" que deciden qué método usar
-    const saveCurrentTestState = () => {
-        if (appState.settings.syncMode === 'sync' && appState.user) {
-            saveTestToFirestore();
-        } else {
-            saveTestToLocalStorage();
-        }
-    };
-
-    const loadPausedTest = async () => {
-        let pausedTest = null;
-        if (appState.settings.syncMode === 'sync' && appState.user) {
-            pausedTest = await loadTestFromFirestore();
-        } else {
-            pausedTest = loadTestFromLocalStorage();
-        }
-
-        if (pausedTest) {
-            appState.currentTest = pausedTest;
-            resumeContainer.classList.remove('hidden');
-        } else {
-            appState.currentTest = null;
-            resumeContainer.classList.add('hidden');
-        }
-    };
-    
-    const clearPausedTest = () => {
-        if (appState.settings.syncMode === 'sync' && appState.user) {
-            clearTestFromFirestore();
-        }
-        clearTestFromLocalStorage(); // Siempre limpiamos el local para evitar conflictos
-    };
-
-
     // --- UTILITY FUNCTIONS ---
     const shuffleArray = (array) => {
         for (let i = array.length - 1; i > 0; i--) {
@@ -222,14 +95,33 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('testAppSettings', JSON.stringify(appState.settings));
         localStorage.setItem('testAppStats', JSON.stringify(appState.stats));
     };
-    
+
+    const saveCurrentTestState = () => {
+        if (appState.currentTest && !appState.currentTest.isFinished) {
+            const additionalTime = appState.currentTest.startTime ? (Date.now() - appState.currentTest.startTime) / 1000 : 0;
+
+            const testStateToSave = {
+                ...appState.currentTest,
+                timeElapsed: appState.currentTest.timeElapsed + additionalTime
+            };
+            localStorage.setItem('testAppPausedTest', JSON.stringify(testStateToSave));
+        }
+    };
+
     const loadState = () => {
         const settings = localStorage.getItem('testAppSettings');
         if (settings) {
             appState.settings = { ...appState.settings, ...JSON.parse(settings) };
         }
+
         const stats = localStorage.getItem('testAppStats');
         if (stats) appState.stats = JSON.parse(stats);
+
+        const pausedTest = localStorage.getItem('testAppPausedTest');
+        if (pausedTest) {
+            appState.currentTest = JSON.parse(pausedTest);
+            resumeContainer.classList.remove('hidden');
+        }
     };
 
     // --- Lógica de Visibilidad del Panel Lateral ---
@@ -396,11 +288,14 @@ document.addEventListener('DOMContentLoaded', () => {
             card.addEventListener('click', () => {
                 const clickedIndex = Number(card.dataset.index);
 
+                // Si hacemos clic en una pregunta diferente a la actual
                 if (test.currentIndex !== clickedIndex) {
+                    // Marcar la pregunta que estamos dejando como "revisitada", bloqueándola para futuros cambios.
                     if (test.revisitedFromSidebar[test.currentIndex]) {
                         test.isLocked[test.currentIndex] = true;
                     }
 
+                    // Navegar a la nueva pregunta y marcarla como "revisitada"
                     test.currentIndex = clickedIndex;
                     test.revisitedFromSidebar[test.currentIndex] = true;
                     renderQuestion();
@@ -413,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TEST LOGIC ---
     const startTest = (examCode, questionCount, specificQuestions = null, isPractice = false) => {
-        clearPausedTest();
+        localStorage.removeItem('testAppPausedTest');
         resumeContainer.classList.add('hidden');
 
         const exam = appState.exams[examCode];
@@ -463,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
             questions,
             userAnswers: Array(questions.length).fill(null),
             answersRevealed: Array(questions.length).fill(false),
+            // NUEVO: Estados para la lógica de "una oportunidad"
             revisitedFromSidebar: Array(questions.length).fill(false),
             isLocked: Array(questions.length).fill(false),
             currentIndex: 0,
@@ -499,15 +395,17 @@ document.addEventListener('DOMContentLoaded', () => {
         questionCounter.textContent = `Pregunta ${test.currentIndex + 1} de ${test.questions.length}`;
         questionText.innerHTML = question.question_text;
 
-        questionImageContainer.innerHTML = '';
+        // --- LÓGICA DE IMAGEN MODIFICADA ---
+        questionImageContainer.innerHTML = ''; // Limpiar imágenes anteriores
         questionImageContainer.classList.add('hidden');
 
         if (appState.settings.showImages === 'yes' && question.image) {
+            // Convertir a array para manejar tanto string como array de strings
             const images = Array.isArray(question.image) ? question.image : [question.image];
             
             if (images.length > 0) {
                 images.forEach(imgSrc => {
-                    if(imgSrc) {
+                    if(imgSrc) { // Añadir una comprobación por si hay valores nulos/vacíos
                         const imgElement = document.createElement('img');
                         imgElement.src = `images/${imgSrc}`;
                         imgElement.alt = "Imagen de la pregunta";
@@ -517,9 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 questionImageContainer.classList.remove('hidden');
             }
         }
+        // --- FIN DE LÓGICA DE IMAGEN MODIFICADA ---
 
         optionsContainer.innerHTML = '';
         question.options.forEach(optionText => {
+            // CAMBIO: Crear <button> en lugar de <div>
             const optionButton = document.createElement('button');
             optionButton.className = 'option';
             optionButton.textContent = optionText;
@@ -534,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             optionsContainer.appendChild(optionButton);
         });
 
+        // NUEVO: Bloquear visualmente las opciones si la pregunta está bloqueada
         if (test.isLocked[test.currentIndex]) {
             optionsContainer.classList.add('locked');
         } else {
@@ -552,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderQuestionSidebar();
         
+        // MODIFICACIÓN: Se añade el autoscroll para el panel lateral.
         const currentCard = sidebarContent.querySelector('.current-question');
         if (currentCard) {
             currentCard.scrollIntoView({
@@ -563,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectAnswer = (optionButton) => {
         const test = appState.currentTest;
+        // MODIFICADO: Añadida comprobación de bloqueo
         if (test.answersRevealed[test.currentIndex] || test.isLocked[test.currentIndex]) {
             return;
         }
@@ -587,12 +490,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         test.userAnswers[test.currentIndex] = currentSelection.sort();
         saveCurrentTestState();
+        // No actualizamos el sidebar aquí para que el color no cambie al instante
     };
 
     const changeQuestion = (direction) => {
         const test = appState.currentTest;
         if (!test || questionContainer.classList.contains('animating')) return;
 
+        // MODIFICACIÓN CLAVE: Bloquear la pregunta actual si fue revisitada
         if (test.revisitedFromSidebar[test.currentIndex]) {
             test.isLocked[test.currentIndex] = true;
         }
@@ -667,16 +572,15 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
         renderExamSelector();
         renderResults(score, correctCount);
-        
-        clearPausedTest();
+        localStorage.removeItem('testAppPausedTest');
         resumeContainer.classList.add('hidden');
         showView('results-view');
     };
 
     const pauseTest = () => {
         stopTimer();
+        saveCurrentTestState();
         if (appState.currentTest && !appState.currentTest.isFinished) {
-            saveCurrentTestState();
             resumeContainer.classList.remove('hidden');
         }
     };
@@ -802,15 +706,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayStatsForSelection = () => {
         const selectedCode = statsExamSelect.value;
     
+        // Parte 1: Calcular estadísticas de los intentos (las tarjetas superiores)
         const attempts = selectedCode === 'all'
             ? Object.values(appState.stats).flatMap(s => s.attempts)
             : (appState.stats[selectedCode]?.attempts || []);
         displayCalculatedStats(attempts);
     
+        // Parte 2: Mostrar evaluación de preparación y preguntas falladas
         if (selectedCode !== 'all') {
             displayExamSpecificStats(selectedCode);
         } else {
-            const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5);
+            // Lógica para "Estadísticas Generales"
+            // A) Evaluación de preparación general
+            const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5); // Tomar los últimos 5 intentos grandes
             if (recentAttempts.length > 0) {
                 const recentAvgScore = recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length;
                 if (recentAvgScore >= 85) {
@@ -825,6 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 readinessContainer.innerHTML = '<h4>Evaluación de Preparación General</h4><p>Realiza más tests (de al menos 30 preguntas) para una evaluación general precisa.</p>';
             }
     
+            // B) Preguntas más falladas de todos los exámenes
             const aggregatedFailed = {};
             Object.values(appState.stats).forEach(examStat => {
                 for (const qId in examStat.failedQuestions) {
@@ -1013,39 +922,41 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#settings-view .btn-group button').forEach(button => {
             button.addEventListener('click', () => {
                 const group = button.parentElement;
+                // Si el botón ya está activo, no hacemos nada
                 if (button.classList.contains('active')) return;
+
                 group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
+                
+                // Llamamos a guardar ajustes automáticamente
                 saveSettings();
             });
         });
     };
 
     const updateSettingsUI = () => {
-        const { timeLimit, questionOrder, answerOrder, syncMode, showSidebar, showImages } = appState.settings;
-        document.querySelectorAll('#setting-time-group button').forEach(btn => btn.classList.toggle('active', Number(btn.dataset.value) === timeLimit));
-        document.querySelectorAll('#q-order-group button').forEach(btn => btn.classList.toggle('active', btn.dataset.value === questionOrder));
-        document.querySelectorAll('#a-order-group button').forEach(btn => btn.classList.toggle('active', btn.dataset.value === answerOrder));
-        document.querySelectorAll('#sync-setting-group button').forEach(btn => btn.classList.toggle('active', btn.dataset.value === syncMode));
-        document.querySelectorAll('#sidebar-setting-group button').forEach(btn => btn.classList.toggle('active', btn.dataset.value === showSidebar));
-        document.querySelectorAll('#image-setting-group button').forEach(btn => btn.classList.toggle('active', btn.dataset.value === showImages));
+        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages } = appState.settings;
+        document.querySelectorAll('#setting-time-group button').forEach(btn =>
+            btn.classList.toggle('active', Number(btn.dataset.value) === timeLimit));
+        document.querySelectorAll('#q-order-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === questionOrder));
+        document.querySelectorAll('#a-order-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === answerOrder));
+        document.querySelectorAll('#sidebar-setting-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === showSidebar));
+        document.querySelectorAll('#image-setting-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === showImages));
     };
 
     const saveSettings = () => {
         const timeLimit = Number(document.querySelector('#setting-time-group .active').dataset.value);
         const questionOrder = document.querySelector('#q-order-group .active').dataset.value;
         const answerOrder = document.querySelector('#a-order-group .active').dataset.value;
-        const syncMode = document.querySelector('#sync-setting-group .active').dataset.value;
         const showSidebar = document.querySelector('#sidebar-setting-group .active').dataset.value;
         const showImages = document.querySelector('#image-setting-group .active').dataset.value;
 
-        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, syncMode, showSidebar, showImages };
+        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages };
 
-        if (syncMode === 'local' && appState.user) {
-            clearTestFromFirestore();
-        }
-        
-        loadPausedTest();
         saveState();
         updateSidebarState();
     };
@@ -1163,31 +1074,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZATION & EVENT LISTENERS ---
     const init = () => {
-        auth.onAuthStateChanged(onAuthStateChanged);
-        
         loadState();
-        updateSettingsUI();
-
         setupSettingsView();
         setupModalListeners();
         loadExams();
         updateSidebarState();
 
+        // --- INICIO: NUEVO CÓDIGO para posicionamiento dinámico del panel lateral ---
         const header = document.querySelector('header');
+
         const adjustSidebarPosition = () => {
+            // Se asegura de que los elementos existan antes de manipularlos
             if (!header || !questionSidebar) return;
 
             const headerHeight = header.offsetHeight;
             const headerRect = header.getBoundingClientRect();
 
+            // Cuando la parte inferior del header ha pasado por encima del borde superior de la ventana
             if (headerRect.bottom <= 0) {
+                // El header no está visible, se fija el panel arriba del todo
                 questionSidebar.style.top = '0px';
             } else {
+                // El header está visible, se posiciona el panel justo debajo de él
                 questionSidebar.style.top = `${headerHeight}px`;
             }
         };
+
+        // Establece la posición inicial al cargar la página
         adjustSidebarPosition();
+
+        // Actualiza la posición cada vez que el usuario hace scroll
         window.addEventListener('scroll', adjustSidebarPosition);
+        // --- FIN: NUEVO CÓDIGO ---
 
         document.addEventListener('keydown', handleKeyPress);
         document.body.addEventListener('touchstart', handleBodyTouchStart, { passive: false });
@@ -1195,25 +1113,29 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('touchmove', handleBodyTouchEndOrMove);
         document.body.addEventListener('touchstart', handleTouchStart, { passive: true });
         document.body.addEventListener('touchend', handleTouchEnd, { passive: true });
+
         sidebarToggleBtn.addEventListener('click', handleSidebarToggle);
+
         navButtons.selector.addEventListener('click', () => handleNavClick('selector-view'));
         navButtons.stats.addEventListener('click', () => handleNavClick('stats-view'));
         navButtons.settings.addEventListener('click', () => handleNavClick('settings-view'));
+
         prevBtn.addEventListener('click', () => changeQuestion(-1));
         nextBtn.addEventListener('click', () => changeQuestion(1));
         finishBtn.addEventListener('click', finishTest);
         showAnswerBtn.addEventListener('click', showAnswer);
+
         backToHomeBtn.addEventListener('click', () => showView('selector-view'));
         restartTestBtn.addEventListener('click', () => {
             if (appState.currentTest) {
                 startTest(appState.currentTest.examCode, appState.currentTest.questions.length);
             }
         });
+        
+        // El botón de guardar ya no existe, por lo que se elimina su listener
         statsExamSelect.addEventListener('change', displayStatsForSelection);
         resetStatsBtn.addEventListener('click', resetStatistics);
         resumeBtn.addEventListener('click', resumeTest);
-        loginAnonymousBtn.addEventListener('click', signInAnonymously);
-        logoutBtn.addEventListener('click', signOut);
     };
 
     init();

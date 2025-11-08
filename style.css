@@ -812,40 +812,4 @@ font-weight: bold;
     #settings-view #setting-time-group button[data-value="90"] {
         flex-basis: 100%;
     }
-
-
-    #auth-container {
-        background-color: #444;
-        padding: 10px;
-        margin: 10px auto;
-        border-radius: 8px;
-        max-width: 600px;
-        text-align: center;
-    }
-    
-    #login-container p {
-        margin: 0 0 10px 0;
-        font-size: 0.9em;
-    }
-    
-    #user-status {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
-    }
-    
-    #user-email {
-        font-size: 0.9em;
-        font-style: italic;
-    }
-    
-    #logout-btn {
-        background-color: var(--danger-color);
-        margin: 0;
-    }
-    
-    #logout-btn:hover {
-        background-color: #c82333;
-    }
 }

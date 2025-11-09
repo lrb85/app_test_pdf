@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const practiceTop10Btn = document.getElementById('practice-top-10-failed-btn');
     const practiceTop100Btn = document.getElementById('practice-top-100-failed-btn');
     const practiceRecentBtn = document.getElementById('practice-recent-failed-btn');
+    const practiceOver50FailedBtn = document.getElementById('practice-over-50-failed-btn');
 
 
     // --- UTILITY FUNCTIONS ---
@@ -238,6 +239,59 @@ document.addEventListener('DOMContentLoaded', () => {
         return fullFailedQuestions;
     };
     
+    const getOver50PercentFailedQuestions = () => {
+        const allQuestionsById = new Map();
+        for (const examCode in appState.exams) {
+            appState.exams[examCode].questions.forEach(q => {
+                if (!allQuestionsById.has(q.id)) {
+                    allQuestionsById.set(q.id, q);
+                }
+            });
+        }
+    
+        const questionStats = {}; // { qId: { correct: X, incorrect: Y } }
+    
+        // Agregar estadísticas de todos los exámenes
+        for (const examCode in appState.stats) {
+            const stats = appState.stats[examCode];
+    
+            // Agregar respuestas incorrectas
+            if (stats.failedQuestions) {
+                for (const qId in stats.failedQuestions) {
+                    if (!questionStats[qId]) questionStats[qId] = { correct: 0, incorrect: 0 };
+                    const stat = stats.failedQuestions[qId];
+                    const count = (typeof stat === 'object') ? stat.count : stat;
+                    questionStats[qId].incorrect += count;
+                }
+            }
+    
+            // Agregar respuestas correctas
+            if (stats.correctQuestions) {
+                for (const qId in stats.correctQuestions) {
+                    if (!questionStats[qId]) questionStats[qId] = { correct: 0, incorrect: 0 };
+                    const stat = stats.correctQuestions[qId];
+                    questionStats[qId].correct += stat.count;
+                }
+            }
+        }
+    
+        const resultQuestions = [];
+        for (const qId in questionStats) {
+            const { correct, incorrect } = questionStats[qId];
+            const totalAttempts = correct + incorrect;
+            if (totalAttempts > 0 && (incorrect / totalAttempts) > 0.5) {
+                const question = allQuestionsById.get(parseInt(qId));
+                if (question) {
+                    question.failureRate = (incorrect / totalAttempts);
+                    resultQuestions.push(question);
+                }
+            }
+        }
+    
+        resultQuestions.sort((a, b) => b.failureRate - a.failureRate);
+        return resultQuestions;
+    };
+
     const startGlobalPracticeFailedTest = (count) => {
         const topFailedQuestions = getGlobalFailedQuestions('count');
         if (topFailedQuestions.length === 0) return;
@@ -250,6 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recentlyFailedQuestions.length === 0) return;
         const questionsForTest = recentlyFailedQuestions.slice(0, count);
         startTest(`PRACTICE_GLOBAL_RECENT_${count}`, questionsForTest.length, questionsForTest, true);
+    };
+
+    const startOver50FailedTest = () => {
+        const questions = getOver50PercentFailedQuestions();
+        if (questions.length === 0) return;
+        startTest(`PRACTICE_GLOBAL_OVER_50_FAILED`, questions.length, questions, true);
     };
 
 
@@ -316,6 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Lógica para los botones de práctica global
         const allFailedQuestionsCount = getGlobalFailedQuestions('count').length;
+        const over50FailedQuestions = getOver50PercentFailedQuestions();
+        const over50FailedCount = over50FailedQuestions.length;
 
         if (allFailedQuestionsCount > 0) {
             practiceTop10Btn.disabled = false;
@@ -331,6 +393,14 @@ document.addEventListener('DOMContentLoaded', () => {
             practiceTop100Btn.textContent = `Practicar las 100 más falladas (0)`;
             practiceRecentBtn.disabled = true;
             practiceRecentBtn.textContent = `Practicar 20 falladas recientemente (0)`;
+        }
+
+        if (over50FailedCount > 0) {
+            practiceOver50FailedBtn.disabled = false;
+            practiceOver50FailedBtn.textContent = `Practicar >50% Falladas (${over50FailedCount})`;
+        } else {
+            practiceOver50FailedBtn.disabled = true;
+            practiceOver50FailedBtn.textContent = `Practicar >50% Falladas (0)`;
         }
 
 
@@ -425,6 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
             examName = `Top ${questionCount} Preguntas Más Falladas`;
         } else if (examCode.startsWith('PRACTICE_GLOBAL_RECENT')) {
             examName = `${questionCount} Preguntas Falladas Recientemente`;
+        } else if (examCode.startsWith('PRACTICE_GLOBAL_OVER_50_FAILED')) {
+            examName = `Preguntas con >50% de Fallos`;
         } else {
             const exam = appState.exams[examCode];
             examName = exam.exam_name;
@@ -652,8 +724,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
         let correctCount = 0;
         const isGlobalPractice = test.examCode.startsWith('PRACTICE_GLOBAL');
-    
-        // Si no es una práctica global, preparamos las estadísticas.
         const examStats = !isGlobalPractice ? (appState.stats[test.examCode] || { attempts: [], failedQuestions: {} }) : null;
     
         test.questions.forEach((q, index) => {
@@ -662,20 +732,34 @@ document.addEventListener('DOMContentLoaded', () => {
     
             if (isCorrect) {
                 correctCount++;
-                // Solo reinicia el contador si es una práctica específica del examen (no global).
-                if (examStats && test.isPracticeFailedTest) {
-                    delete examStats.failedQuestions[q.id];
-                }
-            } else {
-                // Solo actualiza el contador si es un examen normal (no de práctica).
-                if (examStats && !test.isPracticeFailedTest) {
-                    const currentStat = examStats.failedQuestions[q.id];
-                    // Retrocompatibilidad: convierte el formato antiguo si es necesario.
-                    if (typeof currentStat === 'number' || !currentStat) {
-                        examStats.failedQuestions[q.id] = { count: (currentStat || 0) + 1, lastFailed: Date.now() };
-                    } else {
-                        currentStat.count++;
-                        currentStat.lastFailed = Date.now();
+            }
+    
+            // Lógica de actualización de estadísticas (solo si no es una práctica global)
+            if (examStats) {
+                if (test.isPracticeFailedTest) {
+                    // Para los tests de práctica, una respuesta correcta elimina la pregunta de la lista de falladas
+                    if (isCorrect) {
+                        delete examStats.failedQuestions[q.id];
+                    }
+                } else {
+                    // Para los tests normales, actualiza contadores de aciertos y fallos
+                    if (isCorrect) {
+                        if (!examStats.correctQuestions) examStats.correctQuestions = {};
+                        const stat = examStats.correctQuestions[q.id];
+                        if (!stat) {
+                            examStats.correctQuestions[q.id] = { count: 1, lastPassed: Date.now() };
+                        } else {
+                            stat.count++;
+                            stat.lastPassed = Date.now();
+                        }
+                    } else { // Respuesta incorrecta
+                        const stat = examStats.failedQuestions[q.id];
+                        if (typeof stat === 'number' || !stat) {
+                            examStats.failedQuestions[q.id] = { count: (stat || 0) + 1, lastFailed: Date.now() };
+                        } else {
+                            stat.count++;
+                            stat.lastFailed = Date.now();
+                        }
                     }
                 }
             }
@@ -1327,6 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
         practiceTop10Btn.addEventListener('click', () => startGlobalPracticeFailedTest(10));
         practiceTop100Btn.addEventListener('click', () => startGlobalPracticeFailedTest(100));
         practiceRecentBtn.addEventListener('click', () => startRecentlyFailedTest(20));
+        practiceOver50FailedBtn.addEventListener('click', startOver50FailedTest);
 
 
         // Listeners for Import/Export

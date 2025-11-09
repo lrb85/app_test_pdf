@@ -183,8 +183,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica para exámenes de práctica globales ---
     const getGlobalFailedQuestions = (sortBy = 'count') => {
-        let allFailed = []; // Array de objetos { question, count, lastFailed }
+        const aggregatedFailed = {}; // Objeto para agregar fallos: { qId: { count, lastFailed } }
     
+        // 1. Iterar sobre todas las estadísticas para agregar los fallos
+        for (const examCode in appState.stats) {
+            for (const qId in appState.stats[examCode].failedQuestions) {
+                const stat = appState.stats[examCode].failedQuestions[qId];
+                
+                // Retrocompatibilidad con el formato antiguo (solo número)
+                const count = (typeof stat === 'object') ? stat.count : stat;
+                const lastFailed = (typeof stat === 'object') ? stat.lastFailed : 0;
+    
+                if (!aggregatedFailed[qId]) {
+                    aggregatedFailed[qId] = { count: 0, lastFailed: 0 };
+                }
+    
+                aggregatedFailed[qId].count += count;
+                if (lastFailed > aggregatedFailed[qId].lastFailed) {
+                    aggregatedFailed[qId].lastFailed = lastFailed;
+                }
+            }
+        }
+    
+        // 2. Crear un mapa de todas las preguntas por su ID para una búsqueda rápida
         const allQuestionsById = new Map();
         for (const examCode in appState.exams) {
             appState.exams[examCode].questions.forEach(q => {
@@ -194,38 +215,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     
-        for (const examCode in appState.stats) {
-            for (const qId in appState.stats[examCode].failedQuestions) {
-                const stat = appState.stats[examCode].failedQuestions[qId];
-                const question = allQuestionsById.get(parseInt(qId));
-                if (question) {
-                    // Retrocompatibilidad: si el dato es antiguo (solo un número)
-                    const isNewFormat = typeof stat === 'object';
-                    const count = isNewFormat ? stat.count : stat;
-                    const lastFailed = isNewFormat ? stat.lastFailed : 0; // 0 para fallos antiguos sin fecha
-    
-                    allFailed.push({ ...question, failureCount: count, lastFailed });
-                }
+        // 3. Convertir los datos agregados en una lista completa de objetos de pregunta
+        let fullFailedQuestions = Object.entries(aggregatedFailed).map(([qId, stats]) => {
+            const question = allQuestionsById.get(parseInt(qId));
+            if (question) {
+                return {
+                    ...question,
+                    failureCount: stats.count,
+                    lastFailed: stats.lastFailed
+                };
             }
-        }
+            return null;
+        }).filter(Boolean); // Filtrar por si alguna pregunta ya no existe
     
-        // Eliminar duplicados, quedándose con la estadística más alta o reciente
-        const uniqueFailed = new Map();
-        allFailed.forEach(q => {
-            if (!uniqueFailed.has(q.id) || (sortBy === 'count' && q.failureCount > uniqueFailed.get(q.id).failureCount) || (sortBy === 'date' && q.lastFailed > uniqueFailed.get(q.id).lastFailed)) {
-                uniqueFailed.set(q.id, q);
-            }
-        });
-    
-        const sortedQuestions = Array.from(uniqueFailed.values());
-    
+        // 4. Ordenar la lista según el criterio solicitado ('count' o 'date')
         if (sortBy === 'count') {
-            sortedQuestions.sort((a, b) => b.failureCount - a.failureCount);
+            fullFailedQuestions.sort((a, b) => b.failureCount - a.failureCount);
         } else { // sortBy 'date'
-            sortedQuestions.sort((a, b) => b.lastFailed - a.lastFailed);
+            fullFailedQuestions.sort((a, b) => b.lastFailed - a.lastFailed);
         }
     
-        return sortedQuestions;
+        return fullFailedQuestions;
     };
     
     const startGlobalPracticeFailedTest = (count) => {

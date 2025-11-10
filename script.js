@@ -82,6 +82,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const practiceRecentBtn = document.getElementById('practice-recent-failed-btn');
     const practiceOver50FailedBtn = document.getElementById('practice-over-50-failed-btn');
 
+    // Elementos del nuevo modal de reseteo
+    const resetModalOverlay = document.getElementById('reset-modal-overlay');
+    const resetConfirmInput = document.getElementById('reset-confirm-input');
+    const resetCancelBtn = document.getElementById('reset-cancel-btn');
+    const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+    
+    // Elementos del nuevo modal de restauración
+    const restoreStatsBtn = document.getElementById('restore-stats-btn');
+    const restoreModalOverlay = document.getElementById('restore-modal-overlay');
+    const restoreModalInstruction = document.getElementById('restore-modal-instruction');
+    const restoreOptionsContainer = document.getElementById('restore-options-container');
+    const restoreConfirmInput = document.getElementById('restore-confirm-input');
+    const restoreCancelBtn = document.getElementById('restore-cancel-btn');
+    const restoreConfirmBtn = document.getElementById('restore-confirm-btn');
+
 
     // --- UTILITY FUNCTIONS ---
     const shuffleArray = (array) => {
@@ -179,7 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pauseTest();
         }
         showView(viewId);
-        if (viewId === 'stats-view') renderStats();
+        if (viewId === 'stats-view') {
+            renderStats();
+            updateRestoreButtonVisibility();
+        }
     };
 
     // --- Lógica para exámenes de práctica globales ---
@@ -902,13 +920,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- STATISTICS ---
     const renderStats = () => {
-        statsExamSelect.innerHTML = '<option value="all">Estadísticas Generales</option>';
+        const originalSelect = statsExamSelect;
+        originalSelect.innerHTML = '<option value="all">Estadísticas Generales</option>';
+    
+        const customOptionsContainer = document.querySelector('.custom-options');
+        customOptionsContainer.innerHTML = '';
+    
+        // Añadir opción general al selector personalizado
+        const allOptionEl = document.createElement('div');
+        allOptionEl.className = 'custom-option';
+        allOptionEl.textContent = 'Estadísticas Generales';
+        allOptionEl.dataset.value = 'all';
+        customOptionsContainer.appendChild(allOptionEl);
+    
+        // Llenar ambos selectores
         Object.keys(appState.exams).forEach(examCode => {
+            // Llenar el <select> original
             const option = document.createElement('option');
             option.value = examCode;
             option.textContent = appState.exams[examCode].exam_name;
-            statsExamSelect.appendChild(option);
+            originalSelect.appendChild(option);
+    
+            // Llenar el selector personalizado visual
+            const customOptionEl = document.createElement('div');
+            customOptionEl.className = 'custom-option';
+            customOptionEl.textContent = appState.exams[examCode].exam_name;
+            customOptionEl.dataset.value = examCode;
+            customOptionsContainer.appendChild(customOptionEl);
         });
+    
+        // Actualizar la vista inicial
         displayStatsForSelection();
     };
 
@@ -1057,22 +1098,124 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     };
-
-    const resetStatistics = () => {
-        const selectedCode = statsExamSelect.value;
-        if (confirm(`¿Estás seguro de que quieres resetear las estadísticas para ${selectedCode === 'all' ? 'todos los exámenes' : selectedCode}? Esta acción no se puede deshacer.`)) {
-            if (selectedCode === 'all') {
-                appState.stats = {};
-            } else {
-                if (appState.stats[selectedCode]) {
-                    delete appState.stats[selectedCode];
-                }
-            }
-            saveState();
-            displayStatsForSelection();
-            renderExamSelector();
-        }
+    
+    const updateRestoreButtonVisibility = () => {
+        const backups = JSON.parse(localStorage.getItem('testAppStatsBackups') || '[]');
+        restoreStatsBtn.classList.toggle('hidden', backups.length === 0);
     };
+    
+    const openResetConfirmationModal = () => {
+        resetConfirmInput.value = '';
+        resetConfirmBtn.disabled = true;
+        resetModalOverlay.classList.remove('hidden');
+        resetConfirmInput.focus();
+    };
+    
+    const closeResetConfirmationModal = () => {
+        resetModalOverlay.classList.add('hidden');
+    };
+
+    const handleResetConfirmation = () => {
+        // 1. Crear la copia de seguridad antes de borrar
+        const backupsJSON = localStorage.getItem('testAppStatsBackups');
+        const backups = backupsJSON ? JSON.parse(backupsJSON) : [];
+        backups.unshift({ // Añadir al principio para que la más reciente sea la primera
+            timestamp: new Date().toISOString(),
+            stats: JSON.parse(JSON.stringify(appState.stats)) // Deep copy
+        });
+        // Limitar a 5 copias de seguridad
+        if (backups.length > 5) backups.length = 5;
+        localStorage.setItem('testAppStatsBackups', JSON.stringify(backups));
+    
+        // 2. Lógica de reseteo existente
+        const selectedCode = statsExamSelect.value;
+        if (selectedCode === 'all') {
+            appState.stats = {};
+        } else if (appState.stats[selectedCode]) {
+            delete appState.stats[selectedCode];
+        }
+        
+        // 3. Guardar el nuevo estado (vacío) y actualizar la UI
+        saveState();
+        displayStatsForSelection();
+        renderExamSelector();
+        closeResetConfirmationModal();
+        
+        // 4. Mostrar el botón de restaurar
+        updateRestoreButtonVisibility();
+    };
+
+    const openRestoreModal = () => {
+        const backups = JSON.parse(localStorage.getItem('testAppStatsBackups') || '[]');
+    
+        if (backups.length === 0) {
+            return;
+        }
+    
+        restoreOptionsContainer.innerHTML = '';
+        restoreModalInstruction.innerHTML = '';
+    
+        if (backups.length === 1) {
+            restoreModalInstruction.innerHTML = `Se restaurará la copia de seguridad creada el: <strong>${new Date(backups[0].timestamp).toLocaleString()}</strong>`;
+            restoreOptionsContainer.style.display = 'none';
+        } else {
+            restoreModalInstruction.innerHTML = '<strong>Selecciona la copia de seguridad que quieres restaurar:</strong>';
+            restoreOptionsContainer.style.display = 'flex';
+            backups.forEach((backup, index) => {
+                const button = document.createElement('button');
+                button.textContent = `Copia del ${new Date(backup.timestamp).toLocaleString()}`;
+                button.dataset.backupIndex = index;
+                if (index === 0) {
+                    button.classList.add('active'); // Seleccionar la primera por defecto
+                }
+                button.addEventListener('click', (e) => {
+                    restoreOptionsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                });
+                restoreOptionsContainer.appendChild(button);
+            });
+        }
+    
+        restoreConfirmInput.value = '';
+        restoreConfirmBtn.disabled = true;
+        restoreModalOverlay.classList.remove('hidden');
+        restoreConfirmInput.focus();
+    };
+
+    const closeRestoreModal = () => {
+        restoreModalOverlay.classList.add('hidden');
+    };
+
+    const handleRestoreConfirmation = () => {
+        const backups = JSON.parse(localStorage.getItem('testAppStatsBackups') || '[]');
+        if (backups.length === 0) return;
+
+        let selectedIndex = 0;
+        if (backups.length > 1) {
+            const activeButton = restoreOptionsContainer.querySelector('button.active');
+            if (activeButton) {
+                selectedIndex = parseInt(activeButton.dataset.backupIndex, 10);
+            }
+        }
+
+        const statsToRestore = backups[selectedIndex].stats;
+        appState.stats = JSON.parse(JSON.stringify(statsToRestore)); // Deep copy
+
+        // Eliminar la copia restaurada de la lista
+        backups.splice(selectedIndex, 1);
+        if (backups.length > 0) {
+            localStorage.setItem('testAppStatsBackups', JSON.stringify(backups));
+        } else {
+            localStorage.removeItem('testAppStatsBackups');
+        }
+
+        saveState();
+        displayStatsForSelection();
+        renderExamSelector();
+        updateRestoreButtonVisibility();
+        closeRestoreModal();
+    };
+
 
     // --- MODAL LOGIC ---
     const openModalWithQuestion = (question) => {
@@ -1370,7 +1513,42 @@ document.addEventListener('DOMContentLoaded', () => {
         setupSettingsView();
         setupModalListeners();
         loadExams();
+
+        // --- INICIO DEL CÓDIGO PARA EL SELECTOR PERSONALIZADO ---
+        const customSelectWrapper = document.querySelector('.custom-select-wrapper');
+        const customSelectTrigger = customSelectWrapper.querySelector('.custom-select-trigger');
+        const customOptions = customSelectWrapper.querySelector('.custom-options');
+        const originalSelect = statsExamSelect;
+
+        customSelectTrigger.addEventListener('click', () => {
+            customSelectWrapper.classList.toggle('open');
+        });
+
+        customOptions.addEventListener('click', (e) => {
+            if (e.target.classList.contains('custom-option')) {
+                const selectedOption = e.target;
+                
+                // Actualizar el texto visible
+                customSelectTrigger.querySelector('span').textContent = selectedOption.textContent;
+                
+                // Sincronizar con el <select> original y disparar el evento
+                originalSelect.value = selectedOption.dataset.value;
+                originalSelect.dispatchEvent(new Event('change'));
+
+                customSelectWrapper.classList.remove('open');
+            }
+        });
+
+        // Cerrar el selector si se hace clic fuera de él
+        window.addEventListener('click', (e) => {
+            if (!customSelectWrapper.contains(e.target)) {
+                customSelectWrapper.classList.remove('open');
+            }
+        });
+        // --- FIN DEL CÓDIGO PARA EL SELECTOR PERSONALIZADO ---
+
         updateSidebarState();
+        updateRestoreButtonVisibility();
 
         const header = document.querySelector('header');
         const adjustSidebarPosition = () => {
@@ -1416,7 +1594,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         statsExamSelect.addEventListener('change', displayStatsForSelection);
-        resetStatsBtn.addEventListener('click', resetStatistics);
+        
+        // Listeners para los modales
+        resetStatsBtn.addEventListener('click', openResetConfirmationModal);
+        resetCancelBtn.addEventListener('click', closeResetConfirmationModal);
+        resetConfirmBtn.addEventListener('click', handleResetConfirmation);
+        resetConfirmInput.addEventListener('input', () => {
+            resetConfirmBtn.disabled = resetConfirmInput.value.toLowerCase() !== 'eliminar';
+        });
+        resetModalOverlay.addEventListener('click', (e) => {
+            if (e.target === resetModalOverlay) closeResetConfirmationModal();
+        });
+
+        restoreStatsBtn.addEventListener('click', openRestoreModal);
+        restoreCancelBtn.addEventListener('click', closeRestoreModal);
+        restoreConfirmBtn.addEventListener('click', handleRestoreConfirmation);
+        restoreConfirmInput.addEventListener('input', () => {
+            restoreConfirmBtn.disabled = restoreConfirmInput.value.toLowerCase() !== 'restaurar';
+        });
+        restoreModalOverlay.addEventListener('click', (e) => {
+            if (e.target === restoreModalOverlay) closeRestoreModal();
+        });
+
+
         resumeBtn.addEventListener('click', resumeTest);
         
         practiceTop10Btn.addEventListener('click', () => startGlobalPracticeFailedTest(10));

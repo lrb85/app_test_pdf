@@ -1398,9 +1398,20 @@ document.addEventListener('DOMContentLoaded', () => {
         finishBtn.addEventListener('click', finishTest);
         showAnswerBtn.addEventListener('click', showAnswer);
         backToHomeBtn.addEventListener('click', () => showView('selector-view'));
+        
         restartTestBtn.addEventListener('click', () => {
-            if (appState.currentTest && !appState.currentTest.examCode.startsWith('PRACTICE_GLOBAL')) {
-                startTest(appState.currentTest.examCode, appState.currentTest.questions.length);
+            if (appState.currentTest) {
+                const { examCode, questions } = appState.currentTest;
+        
+                if (examCode.startsWith('PRACTICE_GLOBAL_TOP')) {
+                    startGlobalPracticeFailedTest(questions.length);
+                } else if (examCode.startsWith('PRACTICE_GLOBAL_RECENT')) {
+                    startRecentlyFailedTest(questions.length);
+                } else if (examCode.startsWith('PRACTICE_GLOBAL_OVER_50_FAILED')) {
+                    startOver50FailedTest();
+                } else {
+                    startTest(examCode, questions.length);
+                }
             }
         });
         

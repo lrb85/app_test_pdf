@@ -387,48 +387,29 @@ border-color: #ccc;
     margin-bottom: 0.5rem;
 }
 
+.stats-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-self: flex-end;
+}
+.stats-buttons-group button {
+    margin: 0;
+}
+
+
 #reset-stats-btn {
 background-color: var(--danger-color);
-align-self: flex-end;
 }
 #reset-stats-btn:hover {
 background-color: #c82333;
 }
-
-.custom-select-wrapper {
-    position: relative;
-    display: inline-block;
-    width: 100%;
-    max-width: 450px;
+#restore-stats-btn {
+    background-color: var(--success-color);
 }
-.custom-select-wrapper select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    width: 100%;
-    padding: 10px 40px 10px 15px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: white;
-    color: var(--dark-color);
-    cursor: pointer;
-    transition: border-color 0.2s;
+#restore-stats-btn:hover {
+    background-color: #218838;
 }
-.custom-select-wrapper select:hover {
-    border-color: #888;
-}
-.custom-select-wrapper::after {
-    content: '▼';
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    font-size: 0.8rem;
-    pointer-events: none;
-    color: #888;
-}
-
 
 #stats-details {
 display: grid;
@@ -620,6 +601,94 @@ margin-top: 10px;
 font-weight: bold;
 }
 
+/* --- ESTILOS MODAL DE RESETEO --- */
+#reset-modal-container {
+    max-width: 500px;
+}
+#reset-confirm-input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+.reset-modal-footer {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+#reset-cancel-btn {
+    background-color: #6c757d;
+}
+#reset-cancel-btn:hover {
+    background-color: #5a6268;
+}
+#reset-confirm-btn.danger {
+    background-color: var(--danger-color);
+}
+#reset-confirm-btn.danger:hover {
+    background-color: #c82333;
+}
+#reset-confirm-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    border-color: #ccc;
+}
+
+/* --- ESTILOS MODAL DE RESTAURACIÓN --- */
+#restore-modal-container {
+    max-width: 500px;
+}
+#restore-modal-instruction {
+    margin-bottom: 1rem;
+}
+#restore-options-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    padding: 0.5rem;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+#restore-options-container button {
+    width: 100%;
+    margin: 0;
+    text-align: left;
+    background-color: #6c757d;
+}
+#restore-options-container button.active {
+    background-color: var(--primary-color);
+}
+#restore-confirm-input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+.restore-modal-footer {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+#restore-cancel-btn {
+    background-color: #6c757d;
+}
+#restore-confirm-btn.success {
+    background-color: var(--success-color);
+}
+#restore-confirm-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
 /* --- ANIMACIONES PARA SWIPE --- */
 @keyframes slideOutLeft {
     from { transform: translateX(0); opacity: 1; }
@@ -753,6 +822,77 @@ font-weight: bold;
     border-color: #b21f2d;
 }
 
+/* --- NUEVOS ESTILOS PARA EL SELECTOR PERSONALIZADO --- */
+.custom-select-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 450px;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    position: relative;
+    width: 100%;
+    padding: 10px 40px 10px 15px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: white;
+    color: var(--dark-color);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    user-select: none;
+}
+
+.custom-select-trigger::after {
+    content: '▼';
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #888;
+    transition: transform 0.2s;
+}
+
+.custom-select-wrapper.open .custom-select-trigger::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.custom-options {
+    display: none; /* Oculto por defecto */
+    position: absolute;
+    top: 100%; /* <-- LA CLAVE: Siempre se posiciona debajo */
+    left: 0;
+    right: 0;
+    border: 1px solid #ccc;
+    border-top: 0;
+    border-radius: 0 0 5px 5px;
+    background-color: white;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.custom-select-wrapper.open .custom-options {
+    display: block; /* Se muestra cuando está abierto */
+}
+
+.custom-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.custom-option:hover {
+    background-color: #f4f4f4;
+}
+
 /* --- Diseño Responsive --- */
 @media (max-width: 900px) {
     #question-sidebar {
@@ -796,9 +936,9 @@ font-weight: bold;
     .stats-controls .form-group {
         width: 100%;
     }
-    #reset-stats-btn {
-        align-self: center;
+    .stats-buttons-group {
         width: 100%;
+        align-self: center;
     }
     #settings-view .btn-group {
         flex-wrap: wrap;

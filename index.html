@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="es">
 
@@ -88,13 +89,27 @@
                 <div class="stats-controls">
                     <div class="form-group">
                         <label for="stats-exam-select">Selecciona un examen:</label>
+                        <!-- Contenedor del nuevo selector personalizado -->
                         <div class="custom-select-wrapper">
-                            <select id="stats-exam-select">
+                            <!-- El <select> original ahora está oculto pero sigue funcionando -->
+                            <select id="stats-exam-select" style="display: none;">
                                 <option value="all">Estadísticas Generales</option>
                             </select>
+                            <!-- Esta es la parte visible de nuestro nuevo selector -->
+                            <div class="custom-select">
+                                <div class="custom-select-trigger">
+                                    <span>Estadísticas Generales</span>
+                                </div>
+                                <div class="custom-options">
+                                    <!-- Las opciones se generarán con JavaScript -->
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <button id="reset-stats-btn">Resetear Estadísticas</button>
+                    <div class="stats-buttons-group">
+                        <button id="restore-stats-btn" class="hidden">Restaurar Copia</button>
+                        <button id="reset-stats-btn">Resetear Estadísticas</button>
+                    </div>
                 </div>
                 <div id="stats-details"></div>
                 <h3>Preguntas Más Falladas</h3>
@@ -182,6 +197,35 @@
             <div class="modal-footer">
                 <button id="modal-check-btn">Comprobar Respuesta</button>
                 <p id="modal-correct-answer"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar reseteo de estadísticas -->
+    <div id="reset-modal-overlay" class="modal-overlay hidden">
+        <div id="reset-modal-container" class="modal-container">
+            <h3>Confirmar Reseteo de Estadísticas</h3>
+            <p>Esta acción es <strong>irreversible</strong> y borrará las estadísticas seleccionadas permanentemente.</p>
+            <p>Para confirmar, escribe la palabra <strong>eliminar</strong> en el campo de abajo.</p>
+            <input type="text" id="reset-confirm-input" placeholder="Escribe aquí..." autocomplete="off">
+            <div class="reset-modal-footer">
+                <button id="reset-cancel-btn">Cancelar</button>
+                <button id="reset-confirm-btn" class="danger" disabled>Resetear Estadísticas</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para restaurar estadísticas -->
+    <div id="restore-modal-overlay" class="modal-overlay hidden">
+        <div id="restore-modal-container" class="modal-container">
+            <h3>Restaurar Copia de Seguridad</h3>
+            <p id="restore-modal-instruction"></p>
+            <div id="restore-options-container"></div>
+            <p style="margin-top: 1rem;">Para confirmar la restauración, escribe la palabra <strong>restaurar</strong> en el campo de abajo.</p>
+            <input type="text" id="restore-confirm-input" placeholder="Escribe aquí..." autocomplete="off">
+            <div class="restore-modal-footer">
+                <button id="restore-cancel-btn">Cancelar</button>
+                <button id="restore-confirm-btn" class="success" disabled>Confirmar Restauración</button>
             </div>
         </div>
     </div>

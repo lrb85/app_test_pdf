@@ -6065,7 +6065,6 @@ window.examData_H12_811_V1_0_full = {
       ],
       "correct_answers": [
         "A",
-        "B",
         "C",
         "D"
       ],

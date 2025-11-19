@@ -11,6 +11,13 @@
 <body>
     <header>
         <h1>Test App</h1>
+        
+        <!-- Botón de Tema -->
+        <button id="theme-toggle-fab" title="Cambiar Tema">
+            <span class="icon-sun">☀️</span>
+            <span class="icon-moon">🌙</span>
+        </button>
+
         <nav>
             <button id="nav-selector">Realizar Examen</button>
             <button id="nav-stats">Estadísticas</button>
@@ -27,7 +34,7 @@
                 </div>
                 
                 <!-- Sección para Práctica Global -->
-                <div id="global-practice-container" style="margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1.5rem;">
+                <div id="global-practice-container" style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
                      <h2>Práctica Global</h2>
                      <p>Realiza un examen con las preguntas que más has fallado en todos los tests.</p>
                      <div class="exam-item-controls" style="flex-direction: row; justify-content: center; flex-wrap: wrap;">
@@ -73,9 +80,13 @@
             <div id="results-view" class="view">
                 <h2>Resultados del Examen</h2>
                 <div id="results-summary"></div>
-                <div class="results-footer">
-                    <p class="exam-title-summary"><strong>Examen:</strong> <span></span></p>
-                    <button id="restart-test-btn">Reiniciar Examen</button>
+                <div class="results-footer" id="results-footer">
+                    <div class="results-footer-info">
+                        <p class="exam-title-summary"><strong>Examen:</strong> <span></span></p>
+                    </div>
+                    <div class="results-footer-buttons" id="results-footer-buttons">
+                        <button id="restart-test-btn">Reiniciar Examen</button>
+                    </div>
                 </div>
                 <div id="review-container"></div>
                 <button id="back-to-home-btn">Volver al Inicio</button>
@@ -84,24 +95,21 @@
             <!-- Vista de Estadísticas -->
             <div id="stats-view" class="view">
                 <h2>Tus Estadísticas</h2>
+                
                 <div id="readiness-container"></div>
+                
                 <div class="stats-controls">
                     <div class="form-group">
                         <label for="stats-exam-select">Selecciona un examen:</label>
-                        <!-- Contenedor del nuevo selector personalizado -->
                         <div class="custom-select-wrapper">
-                            <!-- El <select> original ahora está oculto pero sigue funcionando -->
                             <select id="stats-exam-select" style="display: none;">
                                 <option value="all">Estadísticas Generales</option>
                             </select>
-                            <!-- Esta es la parte visible de nuestro nuevo selector -->
                             <div class="custom-select">
                                 <div class="custom-select-trigger">
                                     <span>Estadísticas Generales</span>
                                 </div>
-                                <div class="custom-options">
-                                    <!-- Las opciones se generarán con JavaScript -->
-                                </div>
+                                <div class="custom-options"></div>
                             </div>
                         </div>
                     </div>
@@ -110,15 +118,49 @@
                         <button id="reset-stats-btn">Resetear Estadísticas</button>
                     </div>
                 </div>
+                
                 <div id="stats-details"></div>
+
+                <!-- Sección de Logros -->
+                <h3>Logros Desbloqueados</h3>
+                <div id="achievements-container" class="achievements-grid">
+                    <!-- Los logros se generan vía JS -->
+                </div>
+
+                <!-- Gráficas -->
+                <div class="chart-section">
+                    <h3>Análisis de Rendimiento</h3>
+                    <div id="progress-chart-container" class="chart-container">
+                        <!-- SVG generado por JS -->
+                        <p class="no-data-msg">Realiza algunos exámenes para ver tu progreso.</p>
+                    </div>
+                    
+                    <!-- NUEVO CONTENEDOR PARA GRÁFICAS ADICIONALES -->
+                    <div id="additional-charts-grid" class="charts-grid">
+                        <!-- Se rellenará con JS -->
+                    </div>
+                </div>
+
                 <h3>Preguntas Más Falladas</h3>
                 <ul id="failed-questions-list"></ul>
+
             </div>
 
             <!-- Vista de Ajustes -->
             <div id="settings-view" class="view">
                 <h2>Ajustes del Examen</h2>
                 <div class="settings-form">
+                    
+                    <!-- Selector de Tema -->
+                    <div class="form-group">
+                        <label>Tema de la Aplicación:</label>
+                        <div class="btn-group" id="theme-setting-group">
+                            <button data-value="light">Claro</button>
+                            <button data-value="dark">Oscuro</button>
+                            <button data-value="system">Sistema</button>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Tiempo Límite para el Examen:</label>
                         <div class="btn-group" id="setting-time-group">
@@ -157,10 +199,17 @@
                             <button data-value="no">No</button>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label>Pasar automáticamente a la siguiente pregunta:</label>
+                        <div class="btn-group" id="auto-advance-group">
+                            <button data-value="yes">Sí</button>
+                            <button data-value="no">No</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sección de Importar/Exportar -->
-                <div class="settings-section" style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+                <div class="settings-section" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                     <h3>Sincronizar Progreso</h3>
                     <p>Exporta tu examen en curso para continuar en otro dispositivo, o importa un progreso previo.</p>
                     <div class="btn-group">
@@ -170,23 +219,42 @@
                     </div>
                     <p id="import-export-msg" class="hidden" style="margin-top: 1rem; font-weight: bold;"></p>
                 </div>
-
-                <p id="settings-saved-msg" class="hidden">Ajustes guardados.</p>
             </div>
         </main>
+        
+        <!-- Panel Lateral -->
         <div id="question-sidebar" class="hidden">
             <button id="sidebar-toggle-btn" title="Ocultar Panel">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
+            <!-- Header de Estadísticas del Sidebar -->
+            <div id="sidebar-stats-header">
+                <div class="sb-stat-item clickable active" id="sb-stat-total" title="Mostrar todas">
+                    <span class="sb-label">Total</span>
+                    <span class="sb-value">0</span>
+                </div>
+                <div class="sb-stat-item clickable" id="sb-stat-correct" title="Filtrar por correctas">
+                    <span class="sb-label">Bien</span>
+                    <span class="sb-value">0</span>
+                </div>
+                <div class="sb-stat-item clickable" id="sb-stat-incorrect" title="Filtrar por fallos">
+                    <span class="sb-label">Mal</span>
+                    <span class="sb-value">0</span>
+                </div>
+                <div class="sb-stat-item clickable" id="sb-stat-unanswered" title="Filtrar por sin responder">
+                    <span class="sb-label">Pend.</span>
+                    <span class="sb-value">0</span>
+                </div>
+            </div>
             <div id="sidebar-content">
                 <!-- Las tarjetas de las preguntas se generarán aquí -->
             </div>
         </div>
     </div>
 
-    <!-- Modal para practicar preguntas falladas -->
+    <!-- Modales -->
     <div id="modal-overlay" class="modal-overlay hidden">
         <div id="modal-container" class="modal-container">
             <button id="modal-close-btn" class="modal-close-btn">&times;</button>
@@ -200,7 +268,6 @@
         </div>
     </div>
 
-    <!-- Modal para confirmar reseteo de estadísticas -->
     <div id="reset-modal-overlay" class="modal-overlay hidden">
         <div id="reset-modal-container" class="modal-container">
             <h3>Confirmar Reseteo de Estadísticas</h3>
@@ -214,10 +281,10 @@
         </div>
     </div>
     
-    <!-- Modal para restaurar estadísticas -->
     <div id="restore-modal-overlay" class="modal-overlay hidden">
         <div id="restore-modal-container" class="modal-container">
             <h3>Restaurar Copia de Seguridad</h3>
+            <p>Esta acción es <strong>irreversible</strong>.</p>
             <p id="restore-modal-instruction"></p>
             <div id="restore-options-container"></div>
             <p style="margin-top: 1rem;">Para confirmar la restauración, escribe la palabra <strong>restaurar</strong> en el campo de abajo.</p>
@@ -228,7 +295,6 @@
             </div>
         </div>
     </div>
-
 
     <script src="script.js"></script>
     <script src="exams/H12-811_V1.0_full.js"></script>

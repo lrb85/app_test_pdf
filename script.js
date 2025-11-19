@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showSidebar: 'disabled',
             sidebarCollapsed: false,
             showImages: 'yes',
+            autoAdvance: 'no',
+            theme: 'system'
         },
         stats: {},
         currentTest: null,
@@ -43,9 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionCounter = document.getElementById('question-counter');
     const timerDisplay = document.getElementById('timer');
     const questionContainer = document.getElementById('question-container');
+    
+    // Sidebar elements
     const questionSidebar = document.getElementById('question-sidebar');
     const sidebarContent = document.getElementById('sidebar-content');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    
+    // Sidebar Stats Elements
+    const sbStatTotal = document.getElementById('sb-stat-total').querySelector('.sb-value');
+    const sbStatCorrect = document.getElementById('sb-stat-correct').querySelector('.sb-value');
+    const sbStatIncorrect = document.getElementById('sb-stat-incorrect').querySelector('.sb-value');
+    const sbStatUnanswered = document.getElementById('sb-stat-unanswered').querySelector('.sb-value');
+
+    // Sidebar Containers for filtering
+    const sbStatIncorrectContainer = document.getElementById('sb-stat-incorrect');
+    const sbStatTotalContainer = document.getElementById('sb-stat-total');
+    const sbStatCorrectContainer = document.getElementById('sb-stat-correct');
+    const sbStatUnansweredContainer = document.getElementById('sb-stat-unanswered');
+
+
     const questionText = document.getElementById('question-text');
     const questionImageContainer = document.getElementById('question-image-container');
     const optionsContainer = document.getElementById('options-container');
@@ -65,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const failedQuestionsList = document.getElementById('failed-questions-list');
     const readinessContainer = document.getElementById('readiness-container');
     const resetStatsBtn = document.getElementById('reset-stats-btn');
-    const settingsSavedMsg = document.getElementById('settings-saved-msg');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalContainer = document.getElementById('modal-container');
     const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -81,14 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const practiceTop100Btn = document.getElementById('practice-top-100-failed-btn');
     const practiceRecentBtn = document.getElementById('practice-recent-failed-btn');
     const practiceOver50FailedBtn = document.getElementById('practice-over-50-failed-btn');
+    const resultsFooterButtons = document.getElementById('results-footer-buttons');
+    
+    const progressChartContainer = document.getElementById('progress-chart-container');
+    const additionalChartsGrid = document.getElementById('additional-charts-grid');
+    const achievementsContainer = document.getElementById('achievements-container');
+    const themeToggleFab = document.getElementById('theme-toggle-fab');
 
-    // Elementos del nuevo modal de reseteo
+    // Modales
     const resetModalOverlay = document.getElementById('reset-modal-overlay');
     const resetConfirmInput = document.getElementById('reset-confirm-input');
     const resetCancelBtn = document.getElementById('reset-cancel-btn');
     const resetConfirmBtn = document.getElementById('reset-confirm-btn');
     
-    // Elementos del nuevo modal de restauración
     const restoreStatsBtn = document.getElementById('restore-stats-btn');
     const restoreModalOverlay = document.getElementById('restore-modal-overlay');
     const restoreModalInstruction = document.getElementById('restore-modal-instruction');
@@ -134,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const settings = localStorage.getItem('testAppSettings');
         if (settings) {
             appState.settings = { ...appState.settings, ...JSON.parse(settings) };
+            applyTheme();
         }
 
         const stats = localStorage.getItem('testAppStats');
@@ -143,12 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pausedTest) {
             try {
                 appState.currentTest = JSON.parse(pausedTest);
-                 // Solo mostrar el botón si el examen no está finalizado
                 if (appState.currentTest && !appState.currentTest.isFinished) {
                     resumeContainer.classList.remove('hidden');
                 } else {
                     resumeContainer.classList.add('hidden');
-                    localStorage.removeItem('testAppPausedTest'); // Limpiar si es un examen finalizado
+                    localStorage.removeItem('testAppPausedTest');
                 }
             } catch (e) {
                 console.error("Error parsing paused test data:", e);
@@ -156,6 +178,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    
+    // --- THEME LOGIC ---
+    const updateThemeTooltip = (isDark) => {
+        // Lógica inteligente para el título del botón
+        if (themeToggleFab) {
+            themeToggleFab.title = isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro";
+        }
+    };
+
+    const applyTheme = () => {
+        const theme = appState.settings.theme;
+        let isDark = false;
+        if (theme === 'dark') isDark = true;
+        else if (theme === 'system') isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (isDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+
+        // Actualizar título del botón
+        updateThemeTooltip(isDark);
+    };
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (appState.settings.theme === 'system') applyTheme();
+    });
+
+    // FAB Toggle Logic
+    themeToggleFab.addEventListener('click', () => {
+        const isCurrentlyDark = document.documentElement.hasAttribute('data-theme');
+        const newTheme = isCurrentlyDark ? 'light' : 'dark';
+        appState.settings.theme = newTheme;
+        
+        saveState();
+        applyTheme();
+        updateSettingsUI(); 
+    });
     
     // --- Lógica de Visibilidad del Panel Lateral ---
     const updateSidebarState = () => {
@@ -202,14 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica para exámenes de práctica globales ---
     const getGlobalFailedQuestions = (sortBy = 'count') => {
-        const aggregatedFailed = {}; // Objeto para agregar fallos: { qId: { count, lastFailed } }
-    
-        // 1. Iterar sobre todas las estadísticas para agregar los fallos
+        const aggregatedFailed = {}; 
         for (const examCode in appState.stats) {
             for (const qId in appState.stats[examCode].failedQuestions) {
                 const stat = appState.stats[examCode].failedQuestions[qId];
-                
-                // Retrocompatibilidad con el formato antiguo (solo número)
                 const count = (typeof stat === 'object') ? stat.count : stat;
                 const lastFailed = (typeof stat === 'object') ? stat.lastFailed : 0;
     
@@ -223,8 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    
-        // 2. Crear un mapa de todas las preguntas por su ID para una búsqueda rápida
         const allQuestionsById = new Map();
         for (const examCode in appState.exams) {
             appState.exams[examCode].questions.forEach(q => {
@@ -233,8 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-    
-        // 3. Convertir los datos agregados en una lista completa de objetos de pregunta
         let fullFailedQuestions = Object.entries(aggregatedFailed).map(([qId, stats]) => {
             const question = allQuestionsById.get(parseInt(qId));
             if (question) {
@@ -245,15 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             }
             return null;
-        }).filter(Boolean); // Filtrar por si alguna pregunta ya no existe
+        }).filter(Boolean);
     
-        // 4. Ordenar la lista según el criterio solicitado ('count' o 'date')
         if (sortBy === 'count') {
             fullFailedQuestions.sort((a, b) => b.failureCount - a.failureCount);
-        } else { // sortBy 'date'
+        } else { 
             fullFailedQuestions.sort((a, b) => b.lastFailed - a.lastFailed);
         }
-    
         return fullFailedQuestions;
     };
     
@@ -266,14 +317,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-    
-        const questionStats = {}; // { qId: { correct: X, incorrect: Y } }
-    
-        // Agregar estadísticas de todos los exámenes
+        const questionStats = {}; 
         for (const examCode in appState.stats) {
             const stats = appState.stats[examCode];
-    
-            // Agregar respuestas incorrectas
             if (stats.failedQuestions) {
                 for (const qId in stats.failedQuestions) {
                     if (!questionStats[qId]) questionStats[qId] = { correct: 0, incorrect: 0 };
@@ -282,8 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     questionStats[qId].incorrect += count;
                 }
             }
-    
-            // Agregar respuestas correctas
             if (stats.correctQuestions) {
                 for (const qId in stats.correctQuestions) {
                     if (!questionStats[qId]) questionStats[qId] = { correct: 0, incorrect: 0 };
@@ -292,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    
         const resultQuestions = [];
         for (const qId in questionStats) {
             const { correct, incorrect } = questionStats[qId];
@@ -305,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    
         resultQuestions.sort((a, b) => b.failureRate - a.failureRate);
         return resultQuestions;
     };
@@ -392,7 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderExamSelector = () => {
         examListContainer.innerHTML = '';
         
-        // Lógica para los botones de práctica global
         const allFailedQuestionsCount = getGlobalFailedQuestions('count').length;
         const over50FailedQuestions = getOver50PercentFailedQuestions();
         const over50FailedCount = over50FailedQuestions.length;
@@ -467,8 +508,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!test) return;
 
         sidebarContent.innerHTML = '';
+        
+        // Calcular estadísticas actuales del test para el header del sidebar
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let unansweredCount = 0; 
+        const totalQuestions = test.questions.length;
 
         test.questions.forEach((q, index) => {
+            const userAnswer = test.userAnswers[index];
+            if (userAnswer && userAnswer.length > 0) {
+                const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
+                if (isCorrect) correctCount++;
+                else incorrectCount++;
+            } else {
+                unansweredCount++;
+            }
+        });
+
+        // Actualizar DOM de estadísticas
+        sbStatTotal.textContent = totalQuestions;
+        sbStatCorrect.textContent = correctCount;
+        sbStatIncorrect.textContent = incorrectCount;
+        sbStatUnanswered.textContent = unansweredCount;
+
+        // Aplicar clases activas a los filtros del header
+        sbStatTotalContainer.classList.toggle('active', test.sidebarFilter === 'all');
+        sbStatCorrectContainer.classList.toggle('active', test.sidebarFilter === 'correct');
+        sbStatIncorrectContainer.classList.toggle('active', test.sidebarFilter === 'incorrect');
+        sbStatUnansweredContainer.classList.toggle('active', test.sidebarFilter === 'unanswered');
+
+        test.questions.forEach((q, index) => {
+            // Usar la función helper para determinar si se muestra
+            if (!matchesSidebarFilter(index)) return;
+
+            const userAnswer = test.userAnswers[index];
+            const hasAnswer = userAnswer && userAnswer.length > 0;
+            const isCorrect = hasAnswer ? (JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort())) : null;
+
             const card = document.createElement('div');
             card.className = 'sidebar-question-card';
             card.textContent = `Pregunta ${index + 1}`;
@@ -478,9 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.classList.add('current-question');
             }
 
-            const userAnswer = test.userAnswers[index];
-            if (userAnswer && userAnswer.length > 0 && index !== test.currentIndex) {
-                const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
+            if (hasAnswer && index !== test.currentIndex) {
                 card.classList.add(isCorrect ? 'answered-correct' : 'answered-incorrect');
             }
 
@@ -500,6 +575,30 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebarContent.appendChild(card);
         });
     };
+
+    // Listeners para el header del sidebar
+    const setupSidebarStatsListeners = () => {
+        const toggleFilter = (filter) => {
+            if (appState.currentTest) {
+                // Si clicas el mismo, vuelve a 'all', si no, pone el nuevo
+                appState.currentTest.sidebarFilter = appState.currentTest.sidebarFilter === filter ? 'all' : filter;
+                renderQuestionSidebar();
+                renderQuestion(); // Actualizar navegación de botones
+            }
+        };
+
+        sbStatIncorrectContainer.addEventListener('click', () => toggleFilter('incorrect'));
+        sbStatCorrectContainer.addEventListener('click', () => toggleFilter('correct'));
+        sbStatUnansweredContainer.addEventListener('click', () => toggleFilter('unanswered'));
+        sbStatTotalContainer.addEventListener('click', () => {
+             if (appState.currentTest) {
+                appState.currentTest.sidebarFilter = 'all';
+                renderQuestionSidebar();
+                renderQuestion(); // Actualizar navegación de botones
+            }
+        });
+    };
+
 
     // --- TEST LOGIC ---
     const startTest = (examCode, questionCount, specificQuestions = null, isPractice = false) => {
@@ -574,6 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
             timeElapsed: 0,
             isFinished: false,
             isPracticeFailedTest: isPractice,
+            sidebarFilter: 'all' 
         };
 
         startTimer();
@@ -594,9 +694,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- NAVIGATION & FILTER HELPER FUNCTIONS ---
+
+    // Verifica si una pregunta en un índice dado cumple con el filtro activo
+    const matchesSidebarFilter = (index) => {
+        const test = appState.currentTest;
+        if (!test) return false;
+        if (test.sidebarFilter === 'all') return true;
+
+        const q = test.questions[index];
+        const userAnswer = test.userAnswers[index];
+        const hasAnswer = userAnswer && userAnswer.length > 0;
+        
+        if (test.sidebarFilter === 'unanswered') {
+            return !hasAnswer;
+        }
+
+        if (hasAnswer) {
+            const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
+            if (test.sidebarFilter === 'correct') return isCorrect;
+            if (test.sidebarFilter === 'incorrect') return !isCorrect;
+        }
+        
+        return false;
+    };
+
+    // Encuentra el siguiente/anterior índice que cumpla con el filtro
+    const findAdjacentIndex = (currentIndex, direction) => {
+        const test = appState.currentTest;
+        if (!test) return -1;
+
+        let i = currentIndex + direction;
+        while (i >= 0 && i < test.questions.length) {
+            if (matchesSidebarFilter(i)) {
+                return i;
+            }
+            i += direction;
+        }
+        return -1;
+    };
+
     const renderQuestion = () => {
         const test = appState.currentTest;
         if (!test) return;
+        
+        // Asegurarse que la pregunta actual cumple el filtro (si se cambió de filtro mientras se estaba en ella)
+        // O simplemente mostrarla, pero la navegación se adapta.
+        // Mostramos siempre la pregunta actual aunque no cumpla el filtro para evitar estado vacío.
+        
         const question = test.questions[test.currentIndex];
 
         testTitle.textContent = test.examName;
@@ -644,9 +789,31 @@ document.addEventListener('DOMContentLoaded', () => {
             optionsContainer.classList.remove('locked');
         }
 
-        prevBtn.disabled = test.currentIndex === 0;
-        nextBtn.classList.toggle('hidden', test.currentIndex === test.questions.length - 1);
-        finishBtn.classList.toggle('hidden', test.currentIndex !== test.questions.length - 1);
+        // --- LÓGICA DE BOTONES DE NAVEGACIÓN ACTUALIZADA ---
+        const prevIndex = findAdjacentIndex(test.currentIndex, -1);
+        const nextIndex = findAdjacentIndex(test.currentIndex, 1);
+
+        prevBtn.disabled = prevIndex === -1;
+        
+        // Si hay siguiente filtro válido, mostrar Next.
+        // Si no hay, y estamos en la última pregunta absoluta, mostrar Finalizar.
+        // Si no hay siguiente filtro válido, pero NO es la última absoluta (ej. filtro "Mal" y la última es "Bien"), ocultamos Next.
+        
+        if (nextIndex !== -1) {
+            nextBtn.classList.remove('hidden');
+            finishBtn.classList.add('hidden');
+        } else {
+            nextBtn.classList.add('hidden');
+            // Mostrar botón finalizar solo si estamos en la última pregunta absoluta O si ya no hay más preguntas del filtro
+            // Por consistencia, permitimos finalizar si no hay más preguntas "Siguientes" disponibles en el filtro actual.
+            finishBtn.classList.remove('hidden');
+        }
+        
+        // Caso especial: Si el usuario está en la última pregunta absoluta, siempre mostrar Finalizar
+        if (test.currentIndex === test.questions.length - 1) {
+            finishBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+        }
 
         if (test.answersRevealed[test.currentIndex]) {
             showAnswer();
@@ -670,15 +837,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (test.answersRevealed[test.currentIndex] || test.isLocked[test.currentIndex]) {
             return;
         }
-
+    
         const question = test.questions[test.currentIndex];
         const selectedValue = optionButton.dataset.value;
         let currentSelection = test.userAnswers[test.currentIndex] || [];
-
+    
         if (question.type === 'single') {
             currentSelection = [selectedValue];
             optionsContainer.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
             optionButton.classList.add('selected');
+            
+            // Auto-avance para preguntas simples
+            if (appState.settings.autoAdvance === 'yes') {
+                // Pequeño delay para ver la selección
+                setTimeout(() => {
+                    changeQuestion(1);
+                }, 100);
+            }
         } else {
             const index = currentSelection.indexOf(selectedValue);
             if (index > -1) {
@@ -688,9 +863,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSelection.push(selectedValue);
                 optionButton.classList.add('selected');
             }
+            
+            // Auto-avance para preguntas múltiples
+            if (appState.settings.autoAdvance === 'yes') {
+                // Si el número de respuestas seleccionadas coincide con el número de respuestas correctas, avanza
+                if (currentSelection.length === question.correct_answers.length) {
+                    setTimeout(() => {
+                        changeQuestion(1);
+                    }, 100);
+                }
+            }
         }
         test.userAnswers[test.currentIndex] = currentSelection.sort();
         saveCurrentTestState();
+        
+        // Actualizar contadores del sidebar al responder
+        renderQuestionSidebar();
     };
 
     const changeQuestion = (direction) => {
@@ -703,9 +891,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         saveCurrentTestState();
 
-        const newIndex = test.currentIndex + direction;
+        // USAR LA LÓGICA FILTRADA
+        const newIndex = findAdjacentIndex(test.currentIndex, direction);
 
-        if (newIndex >= 0 && newIndex < test.questions.length) {
+        if (newIndex !== -1) {
             const isMobile = window.innerWidth <= 600;
 
             if (isMobile) {
@@ -752,15 +941,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 correctCount++;
             }
     
-            // Lógica de actualización de estadísticas (solo si no es una práctica global)
+            // Lógica de actualización de estadísticas
             if (examStats) {
                 if (test.isPracticeFailedTest) {
-                    // Para los tests de práctica, una respuesta correcta elimina la pregunta de la lista de falladas
                     if (isCorrect) {
                         delete examStats.failedQuestions[q.id];
                     }
                 } else {
-                    // Para los tests normales, actualiza contadores de aciertos y fallos
                     if (isCorrect) {
                         if (!examStats.correctQuestions) examStats.correctQuestions = {};
                         const stat = examStats.correctQuestions[q.id];
@@ -770,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             stat.count++;
                             stat.lastPassed = Date.now();
                         }
-                    } else { // Respuesta incorrecta
+                    } else {
                         const stat = examStats.failedQuestions[q.id];
                         if (typeof stat === 'number' || !stat) {
                             examStats.failedQuestions[q.id] = { count: (stat || 0) + 1, lastFailed: Date.now() };
@@ -785,7 +972,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
         const score = (correctCount / test.questions.length) * 100;
     
-        // Guardar intento solo si no es práctica global.
         if (examStats) {
             examStats.attempts.push({
                 date: new Date().toISOString(),
@@ -866,13 +1052,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const statusText = isPassed ? 'APROBADO' : 'SUSPENDIDO';
         const statusClass = isPassed ? 'passed' : 'failed';
 
-        resultsSummary.innerHTML = `
+        // Identificar preguntas falladas de este examen específico
+        const failedQuestionsInThisTest = test.questions.filter((q, index) => {
+            const userAnswer = test.userAnswers[index] || [];
+            return JSON.stringify(userAnswer.sort()) !== JSON.stringify([...q.correct_answers].sort());
+        });
+
+        let summaryHTML = `
         <h3 class="result-status ${statusClass}">${statusText}</h3>
         <div class="results-grid">
         <div class="result-card"><h4>Puntuación</h4><p>${formatPercentage(score)}</p></div>
         <div class="result-card"><h4>Correctas</h4><p>${correctCount} de ${test.questions.length}</p></div>
         <div class="result-card"><h4>Tiempo</h4><p>${Math.floor(test.timeElapsed / 60)}m ${Math.floor(test.timeElapsed % 60)}s</p></div>
         </div>`;
+        
+        // Limpiar el footer primero
+        resultsFooterButtons.innerHTML = '';
+        resultsFooterButtons.appendChild(restartTestBtn);
+
+        // Botón para reintentar falladas (a la derecha del reiniciar)
+        if (failedQuestionsInThisTest.length > 0) {
+            const retryBtn = document.createElement('button');
+            retryBtn.id = 'retry-failed-results-btn';
+            retryBtn.className = 'warning-btn';
+            retryBtn.textContent = `Reintentar las ${failedQuestionsInThisTest.length} Falladas`;
+            retryBtn.addEventListener('click', () => {
+                startTest(
+                    test.examCode, 
+                    failedQuestionsInThisTest.length, 
+                    failedQuestionsInThisTest, 
+                    true
+                );
+            });
+            resultsFooterButtons.appendChild(retryBtn);
+        }
+
+        resultsSummary.innerHTML = summaryHTML;
         examTitleSummarySpan.textContent = test.examName;
 
         const getFullAnswerText = (question, answerLetters) => {
@@ -926,22 +1141,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const customOptionsContainer = document.querySelector('.custom-options');
         customOptionsContainer.innerHTML = '';
     
-        // Añadir opción general al selector personalizado
         const allOptionEl = document.createElement('div');
         allOptionEl.className = 'custom-option';
         allOptionEl.textContent = 'Estadísticas Generales';
         allOptionEl.dataset.value = 'all';
         customOptionsContainer.appendChild(allOptionEl);
     
-        // Llenar ambos selectores
         Object.keys(appState.exams).forEach(examCode => {
-            // Llenar el <select> original
             const option = document.createElement('option');
             option.value = examCode;
             option.textContent = appState.exams[examCode].exam_name;
             originalSelect.appendChild(option);
     
-            // Llenar el selector personalizado visual
             const customOptionEl = document.createElement('div');
             customOptionEl.className = 'custom-option';
             customOptionEl.textContent = appState.exams[examCode].exam_name;
@@ -949,7 +1160,6 @@ document.addEventListener('DOMContentLoaded', () => {
             customOptionsContainer.appendChild(customOptionEl);
         });
     
-        // Actualizar la vista inicial
         displayStatsForSelection();
     };
 
@@ -959,24 +1169,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const attempts = selectedCode === 'all'
             ? Object.values(appState.stats).flatMap(s => s.attempts)
             : (appState.stats[selectedCode]?.attempts || []);
+        
+        // Renderizar gráfico
+        renderChart(attempts);
+        renderAdditionalCharts(attempts); // NUEVO
+        
+        // Check logros
+        checkAchievements();
+        
         displayCalculatedStats(attempts);
     
         if (selectedCode !== 'all') {
             displayExamSpecificStats(selectedCode);
         } else {
             const recentAttempts = attempts.filter(a => a.questionCount >= 30).slice(-5);
+            
             if (recentAttempts.length > 0) {
                 const recentAvgScore = recentAttempts.reduce((sum, a) => sum + a.score, 0) / recentAttempts.length;
-                if (recentAvgScore >= 85) {
-                    readinessContainer.className = 'prepared';
-                    readinessContainer.innerHTML = `<h4>¡Estás bien preparado en general!</h4><p>Tu puntuación media reciente en todos los exámenes es <strong>${formatPercentage(recentAvgScore)}</strong>. ¡Excelente trabajo!</p>`;
+                
+                let title = "";
+                let message = "";
+                let cssClass = "";
+
+                if (recentAvgScore >= 95) {
+                    title = "¡Nivel Experto!";
+                    message = `Tu puntuación media reciente es un impresionante <strong>${formatPercentage(recentAvgScore)}</strong>. Estás más que listo para el examen real. ¡Sigue así para asegurar el máximo resultado!`;
+                    cssClass = 'prepared';
+                } else if (recentAvgScore >= 85) {
+                    title = "¡Estás preparado!";
+                    message = `Tienes una media reciente de <strong>${formatPercentage(recentAvgScore)}</strong>. Estás por encima de la nota de corte. Mantén este nivel de práctica y repasa los fallos puntuales para asegurar.`;
+                    cssClass = 'prepared';
+                } else if (recentAvgScore >= 75) {
+                    title = "Casi lo tienes...";
+                    message = `Tu media reciente es del <strong>${formatPercentage(recentAvgScore)}</strong>. Estás cerca del aprobado (85%), repasa tus puntos débiles y lo conseguirás.`;
+                    cssClass = 'neutral'; 
+                } else if (recentAvgScore >= 60) {
+                    title = "Necesitas más estudio";
+                    message = `Con una media reciente del <strong>${formatPercentage(recentAvgScore)}</strong>, aún hay riesgo de suspender. Concéntrate en los simulacros de las preguntas que más fallas y repasa la teoría básica.`;
+                    cssClass = 'unprepared';
                 } else {
-                    readinessContainer.className = 'unprepared';
-                    readinessContainer.innerHTML = `<h4>Necesitas repasar algunos temas.</h4><p>Tu media de aciertos general es del <strong>${formatPercentage(recentAvgScore)}</strong> (se requiere 85%). Revisa las preguntas más falladas para identificar tus áreas débiles.</p>`;
+                    title = "Nivel Inicial / Bajo";
+                    message = `Tu media reciente es <strong>${formatPercentage(recentAvgScore)}</strong>. Se recomienda estudiar el temario a fondo antes de seguir haciendo tests intensivos para evitar memorizar respuestas incorrectas.`;
+                    cssClass = 'unprepared';
                 }
+
+                readinessContainer.className = cssClass;
+                readinessContainer.innerHTML = `<h4>${title}</h4><p>${message}</p>`;
+
             } else {
                 readinessContainer.className = 'neutral';
-                readinessContainer.innerHTML = '<h4>Evaluación de Preparación General</h4><p>Realiza más tests (de al menos 30 preguntas) para una evaluación general precisa.</p>';
+                readinessContainer.innerHTML = '<h4>Evaluación de Preparación General</h4><p>Realiza más tests (de al menos 30 preguntas) para que el sistema pueda evaluar tu nivel de preparación con precisión.</p>';
             }
     
             const aggregatedFailed = {};
@@ -1022,7 +1264,442 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    
+    // --- CHART LOGIC (Spline + Gradient + Tooltip) ---
+    const renderChart = (attempts) => {
+        progressChartContainer.innerHTML = '';
 
+        const sortedAttempts = attempts.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const data = sortedAttempts.slice(-20);
+
+        if (data.length < 2) {
+            progressChartContainer.innerHTML = '<p class="no-data-msg">Se necesitan al menos 2 intentos para generar una gráfica.</p>';
+            return;
+        }
+
+        const width = progressChartContainer.clientWidth - 20;
+        const height = progressChartContainer.clientHeight - 20;
+        const padding = 25; // Aumentado para etiquetas
+
+        const yScale = (val) => height - padding - (val / 100) * (height - 2 * padding);
+        const xScale = (index) => padding + (index / (data.length - 1)) * (width - 2 * padding);
+
+        // --- SMOOTHING LOGIC (Catmull-Rom Spline to Cubic Bezier) ---
+        const getControlPoints = (p0, p1, p2, t = 0.3) => {
+            const d01 = Math.sqrt(Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2));
+            const d12 = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+            const fa = t * d01 / (d01 + d12);
+            const fb = t * d12 / (d01 + d12);
+            const p1x = p1.x - fa * (p2.x - p0.x);
+            const p1y = p1.y - fa * (p2.y - p0.y);
+            const p2x = p1.x + fb * (p2.x - p0.x);
+            const p2y = p1.y + fb * (p2.y - p0.y);
+            return [{x: p1x, y: p1y}, {x: p2x, y: p2y}];
+        }
+
+        const points = data.map((d, i) => ({ x: xScale(i), y: yScale(d.score) }));
+        
+        let pathD = `M ${points[0].x},${points[0].y}`;
+        
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i - 1] || points[i];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[i + 2] || p2;
+
+            const cp1 = getControlPoints(p0, p1, p2)[1];
+            const cp2 = getControlPoints(p1, p2, p3)[0];
+
+            pathD += ` C ${cp1.x},${cp1.y} ${cp2.x},${cp2.y} ${p2.x},${p2.y}`;
+        }
+
+        const areaPathD = `${pathD} L ${points[points.length-1].x},${height-padding} L ${points[0].x},${height-padding} Z`;
+
+        const circles = data.map((d, i) => {
+            const x = xScale(i);
+            const y = yScale(d.score);
+            
+            return `<circle cx="${x}" cy="${y}" class="chart-dot">
+                        <title>Puntuación: ${d.score.toFixed(1)}%\nFecha: ${new Date(d.date).toLocaleDateString()}</title>
+                    </circle>`;
+        }).join('');
+
+        const svg = `
+            <svg class="chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                <!-- Ejes -->
+                <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" class="chart-axis"/>
+                <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="chart-axis"/>
+                
+                <!-- Grid lines -->
+                <line x1="${padding}" y1="${yScale(0)}" x2="${width - padding}" y2="${yScale(0)}" class="chart-grid"/>
+                <line x1="${padding}" y1="${yScale(50)}" x2="${width - padding}" y2="${yScale(50)}" class="chart-grid"/>
+                <line x1="${padding}" y1="${yScale(85)}" x2="${width - padding}" y2="${yScale(85)}" class="chart-grid" style="stroke:var(--success-color);stroke-dasharray:0;opacity:0.5"/>
+                <line x1="${padding}" y1="${yScale(100)}" x2="${width - padding}" y2="${yScale(100)}" class="chart-grid"/>
+
+                <!-- Etiquetas Eje Y -->
+                <text x="${padding - 5}" y="${yScale(0) + 3}" class="chart-label">0%</text>
+                <text x="${padding - 5}" y="${yScale(50) + 3}" class="chart-label">50%</text>
+                <text x="${padding - 5}" y="${yScale(100) + 3}" class="chart-label">100%</text>
+
+                <!-- Área (Relleno) -->
+                <path d="${areaPathD}" class="chart-area" />
+
+                <!-- Línea Curva -->
+                <path d="${pathD}" class="chart-line" />
+                
+                <!-- Puntos -->
+                ${circles}
+            </svg>
+        `;
+
+        progressChartContainer.innerHTML += svg; // Append SVG
+    };
+
+    // --- NUEVAS GRÁFICAS ADICIONALES MEJORADAS ---
+    const renderAdditionalCharts = (attempts) => {
+        additionalChartsGrid.innerHTML = '';
+        
+        if (!attempts || attempts.length === 0) return;
+
+        const scoreDistributionSVG = renderScoreDistributionChart(attempts);
+        const passFailSVG = renderPassFailChart(attempts);
+
+        // Card 1: Distribución
+        const distCard = document.createElement('div');
+        distCard.className = 'extra-chart-card';
+        distCard.innerHTML = `<h4>Distribución de Puntuaciones</h4>${scoreDistributionSVG}`;
+        additionalChartsGrid.appendChild(distCard);
+
+        // Card 2: Pass/Fail
+        const passFailCard = document.createElement('div');
+        passFailCard.className = 'extra-chart-card';
+        passFailCard.innerHTML = `<h4>Ratio Aprobados/Suspendidos</h4>${passFailSVG}`;
+        additionalChartsGrid.appendChild(passFailCard);
+    };
+
+    const renderScoreDistributionChart = (attempts) => {
+        // Bins: <60, 60-84, 85-100
+        const bins = [0, 0, 0]; 
+        const labels = ['<60%', '60-84%', '85-100%'];
+        const fillUrls = ['url(#gradFail)', 'url(#gradMid)', 'url(#gradPass)'];
+        
+        attempts.forEach(a => {
+            if (a.score < 60) bins[0]++;
+            else if (a.score < 85) bins[1]++;
+            else bins[2]++;
+        });
+
+        const maxVal = Math.max(...bins);
+        const height = 180;
+        const width = 220;
+        const barWidth = 40;
+        const gap = 25;
+        const startX = 35;
+        const bottomY = height - 25;
+
+        const bars = bins.map((val, i) => {
+            const h = maxVal > 0 ? (val / maxVal) * (bottomY - 20) : 0; 
+            const x = startX + i * (barWidth + gap);
+            const y = bottomY - h;
+            
+            // Solo dibujar si hay valor para evitar artefactos
+            if (val === 0) return `
+                <text x="${x + barWidth/2}" y="${bottomY + 15}" class="bar-label">${labels[i]}</text>
+            `;
+
+            return `
+                <rect x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="4" ry="4" fill="${fillUrls[i]}" class="bar-rect">
+                    <title>${labels[i]}: ${val} exámenes</title>
+                </rect>
+                <text x="${x + barWidth/2}" y="${y - 5}" class="bar-value">${val}</text>
+                <text x="${x + barWidth/2}" y="${bottomY + 15}" class="bar-label">${labels[i]}</text>
+            `;
+        }).join('');
+
+        return `
+            <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}">
+                <defs>
+                    <linearGradient id="gradFail" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--chart-fail-start);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--chart-fail-end);stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="gradMid" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--chart-mid-start);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--chart-mid-end);stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="gradPass" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--chart-pass-start);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--chart-pass-end);stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <!-- Eje X -->
+                <line x1="20" y1="${bottomY}" x2="${width - 20}" y2="${bottomY}" class="chart-axis" />
+                <!-- Grid Lines -->
+                <line x1="20" y1="20" x2="${width - 20}" y2="20" class="bar-grid" />
+                <line x1="20" y1="${(bottomY-20)/2 + 20}" x2="${width - 20}" y2="${(bottomY-20)/2 + 20}" class="bar-grid" />
+                ${bars}
+            </svg>`;
+    };
+
+    const renderPassFailChart = (attempts) => {
+        const passCount = attempts.filter(a => a.score >= 85).length;
+        const failCount = attempts.length - passCount;
+        const total = attempts.length;
+        
+        if (total === 0) return '';
+
+        const size = 180;
+        const cx = size / 2;
+        const cy = size / 2;
+        const r = 70;
+        const strokeWidth = 18;
+        const circumference = 2 * Math.PI * r;
+
+        const passRatio = passCount / total;
+        const passDash = passRatio * circumference;
+        const offset = -90; // Empezar arriba (las 12 en punto)
+
+        // Calculamos el dasharray para el segmento de aprobados
+        const dashArray = (passRatio === 1 || passRatio === 0) 
+            ? `${passDash} ${circumference}` 
+            : `${passDash} ${circumference - passDash}`;
+
+        return `
+            <svg width="100%" height="100%" viewBox="0 0 ${size} ${size}">
+                <defs>
+                    <!-- Gradiente Verde (Aprobados) -->
+                    <linearGradient id="gradDonutPass" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--chart-pass-start);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--chart-pass-end);stop-opacity:1" />
+                    </linearGradient>
+                    
+                    <!-- Gradiente Rojo (Suspendidos) -->
+                    <linearGradient id="gradDonutFail" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:var(--chart-fail-start);stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:var(--chart-fail-end);stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                
+                <!-- Círculo de Fondo (Suspendidos - Rojo) -->
+                <!-- Este círculo está completo por debajo. Lo que no tape el verde, se verá rojo. -->
+                <circle cx="${cx}" cy="${cy}" r="${r}" 
+                    fill="transparent" 
+                    stroke="url(#gradDonutFail)" 
+                    stroke-width="${strokeWidth}" 
+                    class="donut-segment"
+                >
+                    <title>Suspendidos: ${failCount} (${((1-passRatio)*100).toFixed(1)}%)</title>
+                </circle>
+                
+                <!-- Segmento de Aprobados (Verde - Superpuesto) -->
+                <circle cx="${cx}" cy="${cy}" r="${r}" 
+                    fill="transparent" 
+                    stroke="url(#gradDonutPass)" 
+                    stroke-width="${strokeWidth}" 
+                    stroke-dasharray="${dashArray}" 
+                    stroke-dashoffset="0"
+                    transform="rotate(${offset} ${cx} ${cy})"
+                    class="donut-segment"
+                    style="transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
+                >
+                    <title>Aprobados: ${passCount} (${(passRatio*100).toFixed(1)}%)</title>
+                </circle>
+
+                <!-- Texto Central -->
+                <text x="${cx}" y="${cy - 5}" class="donut-text-main">
+                    ${Math.round(passRatio * 100)}%
+                </text>
+                <text x="${cx}" y="${cy + 15}" class="donut-text-sub">
+                    Aprobados
+                </text>
+            </svg>
+        `;
+    };
+
+
+    // --- ACHIEVEMENTS LOGIC (UPDATED) ---
+    const achievementsList = [
+        { 
+            id: 'first_steps', 
+            title: 'Primeros Pasos', 
+            desc: 'Completa tu primer examen.', 
+            check: (stats) => stats.totalAttempts >= 1, 
+            icon: '🥚',
+            getProgress: (stats) => stats.totalAttempts >= 1 ? '' : 'Haz 1 examen.'
+        },
+        { 
+            id: 'student', 
+            title: 'Estudiante', 
+            desc: 'Completa 10 exámenes.', 
+            check: (stats) => stats.totalAttempts >= 10, 
+            icon: '📚',
+            getProgress: (stats) => stats.totalAttempts >= 10 ? '' : `Faltan ${10 - stats.totalAttempts} exámenes.`
+        },
+        { 
+            id: 'streak', 
+            title: 'En Racha', 
+            desc: 'Aprueba 5 exámenes seguidos.', 
+            check: (stats) => stats.maxStreak >= 5, 
+            icon: '🔥',
+            getProgress: (stats) => stats.maxStreak >= 5 ? '' : `Racha actual: ${stats.currentStreak}/5`
+        },
+        { 
+            id: 'survivor', 
+            title: 'Superviviente', 
+            desc: 'Aprueba un examen con la nota justa (85-89%).', 
+            check: (stats) => stats.hasCloseCall, 
+            icon: '😅',
+            getProgress: (stats) => stats.hasCloseCall ? '' : 'Aprueba entre 85% y 89%.'
+        },
+        { 
+            id: 'speedster', 
+            title: 'Velocista', 
+            desc: 'Aprueba un examen de >50 preguntas con media < 10s/pregunta.', 
+            check: (stats) => stats.hasSpeedRun, 
+            icon: '⚡',
+            getProgress: (stats) => stats.hasSpeedRun ? '' : 'Sé más rápido en un test largo.'
+        },
+        { 
+            id: 'marathoner', 
+            title: 'Maratonista', 
+            desc: 'Completa un examen de más de 50 preguntas.', 
+            check: (stats) => stats.hasLongExam, 
+            icon: '🏃',
+            getProgress: (stats) => stats.hasLongExam ? '' : 'Haz un examen > 50 pregs.'
+        },
+        { 
+            id: 'scholar', 
+            title: 'Erudito', 
+            desc: 'Responde correctamente a 500 preguntas en total.', 
+            check: (stats) => stats.totalCorrect >= 500, 
+            icon: '🧠',
+            getProgress: (stats) => stats.totalCorrect >= 500 ? '' : `Faltan ${500 - stats.totalCorrect} aciertos.`
+        },
+        { 
+            id: 'expert', 
+            title: 'Experto', 
+            desc: 'Completa 50 exámenes.', 
+            check: (stats) => stats.totalAttempts >= 50, 
+            icon: '🎓',
+            getProgress: (stats) => stats.totalAttempts >= 50 ? '' : `Faltan ${50 - stats.totalAttempts} exámenes.`
+        },
+        { 
+            id: 'master', 
+            title: 'Maestro', 
+            desc: 'Mantén una media global superior al 90% (mín. 5 exámenes).', 
+            check: (stats) => stats.totalAttempts >= 5 && stats.avgScore > 90, 
+            icon: '👑',
+            getProgress: (stats) => {
+                if (stats.totalAttempts < 5) return `Faltan ${5 - stats.totalAttempts} exámenes.`;
+                return stats.avgScore > 90 ? '' : `Media actual: ${stats.avgScore.toFixed(1)}%`;
+            }
+        },
+        { 
+            id: 'perfectionist', 
+            title: 'Perfeccionista', 
+            desc: 'Obtén un 100% en un examen de 50 preguntas o más.', 
+            check: (stats) => stats.hasPerfectScore, 
+            icon: '💎',
+            getProgress: (stats) => stats.hasPerfectScore ? '' : '100% en test >50 pregs.'
+        },
+        { 
+            id: 'dedicated', 
+            title: 'Dedicado', 
+            desc: 'Pasa más de 50 horas estudiando en total.', 
+            check: (stats) => stats.totalTime >= 180000, 
+            icon: '⏳',
+            getProgress: (stats) => {
+                const hoursLeft = Math.ceil((180000 - stats.totalTime) / 3600);
+                return stats.totalTime >= 180000 ? '' : `Faltan aprox. ${hoursLeft} horas.`;
+            }
+        },
+        { 
+            id: 'veteran', 
+            title: 'Veterano', 
+            desc: 'Responde a un total de 10.000 preguntas.', 
+            check: (stats) => stats.totalQuestionsAnswered >= 10000, 
+            icon: '🛡️',
+            getProgress: (stats) => stats.totalQuestionsAnswered >= 10000 ? '' : `Faltan ${10000 - stats.totalQuestionsAnswered} pregs.`
+        }
+    ];
+
+    const checkAchievements = () => {
+        let totalAttempts = 0;
+        let totalTime = 0;
+        let totalCorrect = 0;
+        let totalScoreSum = 0;
+        let hasPerfectScore = false;
+        let hasCloseCall = false;
+        let hasSpeedRun = false;
+        let currentStreak = 0;
+        let maxStreak = 0;
+        let totalQuestionsAnswered = 0;
+        let hasLongExam = false;
+
+        const allAttempts = Object.values(appState.stats).flatMap(s => s.attempts).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        totalAttempts = allAttempts.length;
+
+        allAttempts.forEach(attempt => {
+            totalTime += attempt.time;
+            totalScoreSum += attempt.score;
+            totalQuestionsAnswered += attempt.questionCount;
+            
+            // Maratonista: > 50 preguntas
+            if (attempt.questionCount > 50) hasLongExam = true;
+
+            const correctInExam = Math.round((attempt.score / 100) * attempt.questionCount);
+            totalCorrect += correctInExam;
+
+            // PERFECCIONISTA: 100% en examen >= 50 preguntas
+            if (attempt.score === 100 && attempt.questionCount >= 50) hasPerfectScore = true;
+            
+            if (attempt.score >= 85 && attempt.score < 90) hasCloseCall = true;
+            
+            // Velocista: > 50 preguntas Y tiempo medio < 10s Y aprobado (>=85)
+            if (attempt.questionCount > 50 && (attempt.time / attempt.questionCount) < 10 && attempt.score >= 85) {
+                hasSpeedRun = true;
+            }
+
+            if (attempt.score >= 85) {
+                currentStreak++;
+            } else {
+                currentStreak = 0;
+            }
+            if (currentStreak > maxStreak) maxStreak = currentStreak;
+        });
+
+        const avgScore = totalAttempts > 0 ? (totalScoreSum / totalAttempts) : 0;
+
+        const computedStats = {
+            totalAttempts, totalTime, totalCorrect, avgScore, hasPerfectScore, hasCloseCall, hasSpeedRun, maxStreak, totalQuestionsAnswered, hasLongExam, currentStreak
+        };
+
+        achievementsContainer.innerHTML = '';
+        achievementsList.forEach(achievement => {
+            const isUnlocked = achievement.check(computedStats);
+            const card = document.createElement('div');
+            card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
+            
+            // Si está bloqueado, añadir data-progress para el tooltip CSS
+            if (!isUnlocked) {
+                const progressText = achievement.getProgress(computedStats);
+                card.setAttribute('data-progress', progressText);
+                card.title = 'Logro Bloqueado';
+            } else {
+                card.title = '¡Logro Desbloqueado!';
+            }
+
+            card.innerHTML = `
+                <span class="achievement-icon">${achievement.icon}</span>
+                <div class="achievement-title">${achievement.title}</div>
+                <div class="achievement-desc">${achievement.desc}</div>
+            `;
+            achievementsContainer.appendChild(card);
+        });
+    };
+
+    // ... (Rest of the code: displayCalculatedStats, etc.)
     const displayCalculatedStats = (attempts) => {
         const totalAttempts = attempts.length;
         if (totalAttempts === 0) {
@@ -1285,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateSettingsUI = () => {
-        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages } = appState.settings;
+        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, theme } = appState.settings;
         document.querySelectorAll('#setting-time-group button').forEach(btn =>
             btn.classList.toggle('active', Number(btn.dataset.value) === timeLimit));
         document.querySelectorAll('#q-order-group button').forEach(btn =>
@@ -1296,6 +1973,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.toggle('active', btn.dataset.value === showSidebar));
         document.querySelectorAll('#image-setting-group button').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.value === showImages));
+        document.querySelectorAll('#auto-advance-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === autoAdvance));
+        document.querySelectorAll('#theme-setting-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === theme));
     };
 
     const saveSettings = () => {
@@ -1304,11 +1985,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const answerOrder = document.querySelector('#a-order-group .active').dataset.value;
         const showSidebar = document.querySelector('#sidebar-setting-group .active').dataset.value;
         const showImages = document.querySelector('#image-setting-group .active').dataset.value;
+        const autoAdvance = document.querySelector('#auto-advance-group .active').dataset.value;
+        const theme = document.querySelector('#theme-setting-group .active').dataset.value;
 
-        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages };
+        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, theme };
 
         saveState();
         updateSidebarState();
+        applyTheme(); // Aplicar cambios de tema inmediatamente
     };
     
     // --- IMPORT/EXPORT LOGIC ---
@@ -1513,6 +2197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupSettingsView();
         setupModalListeners();
         loadExams();
+        setupSidebarStatsListeners();
 
         // --- INICIO DEL CÓDIGO PARA EL SELECTOR PERSONALIZADO ---
         const customSelectWrapper = document.querySelector('.custom-select-wrapper');

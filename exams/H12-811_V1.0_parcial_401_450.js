@@ -105,7 +105,6 @@ window.examData_H12_811_V1_0_p_401_450 = {
       ],
       "correct_answers": [
         "A",
-        "B",
         "C",
         "D"
       ],

@@ -1386,7 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userWonRace && userPassed) {
                 resultClass = 'win-clean';
                 icon = '🏆🐆';
-                msg = `<h3>¡Victoria Limpia!</h3><p>¡Eres el rey de la pista! Ganaste la carrera con <strong>${avgTime.toFixed(1)}s/preg</strong> y aprobaste.</p>`;
+                msg = `<h3>¡Victoria!</h3><p>¡Eres el rey de la pista! Ganaste la carrera con <strong>${avgTime.toFixed(1)}s/preg</strong> y aprobaste.</p>`;
             } else if (userWonRace && !userPassed) {
                 resultClass = 'win-doping';
                 icon = '💉🐆';

@@ -11,11 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebarCollapsed: false,
             showImages: 'yes',
             autoAdvance: 'no',
+            raceEnabled: 'enabled', 
+            raceCollapsed: false,
             theme: 'system'
         },
         stats: {},
         currentTest: null,
         timerInterval: null,
+        raceState: null 
     };
 
     // --- GESTURE & MODAL STATE ---
@@ -46,11 +49,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const timerDisplay = document.getElementById('timer');
     const questionContainer = document.getElementById('question-container');
     
-    // Sidebar elements
+    // Sidebar elements (Right)
     const questionSidebar = document.getElementById('question-sidebar');
     const sidebarContent = document.getElementById('sidebar-content');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     
+    // Race Track Elements (Left)
+    const raceTrackSidebar = document.getElementById('race-track-sidebar');
+    const raceToggleBtn = document.getElementById('race-toggle-btn');
+    const animalAvatars = {
+        cheetah: document.getElementById('animal-cheetah'),
+        octopus: document.getElementById('animal-octopus'),
+        koala: document.getElementById('animal-koala'),
+        dog: document.getElementById('animal-dog'),
+        turtle: document.getElementById('animal-turtle')
+    };
+    const raceResultContainer = document.getElementById('race-result-container');
+
     // Sidebar Stats Elements
     const sbStatTotal = document.getElementById('sb-stat-total').querySelector('.sb-value');
     const sbStatCorrect = document.getElementById('sb-stat-correct').querySelector('.sb-value');
@@ -146,7 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const testStateToSave = {
                 ...appState.currentTest,
-                timeElapsed: appState.currentTest.timeElapsed + additionalTime
+                timeElapsed: appState.currentTest.timeElapsed + additionalTime,
+                // Guardamos el estado de la carrera para persistencia al recargar
+                raceState: appState.raceState 
             };
             localStorage.setItem('testAppPausedTest', JSON.stringify(testStateToSave));
         }
@@ -156,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const settings = localStorage.getItem('testAppSettings');
         if (settings) {
             appState.settings = { ...appState.settings, ...JSON.parse(settings) };
+            if(!appState.settings.raceEnabled) appState.settings.raceEnabled = 'enabled';
             applyTheme();
         }
 
@@ -166,6 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pausedTest) {
             try {
                 appState.currentTest = JSON.parse(pausedTest);
+                // Restauramos el estado de la carrera desde el objeto guardado
+                if (appState.currentTest.raceState) {
+                    appState.raceState = appState.currentTest.raceState;
+                }
+
                 if (appState.currentTest && !appState.currentTest.isFinished) {
                     resumeContainer.classList.remove('hidden');
                 } else {
@@ -181,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- THEME LOGIC ---
     const updateThemeTooltip = (isDark) => {
-        // Lógica inteligente para el título del botón
         if (themeToggleFab) {
             themeToggleFab.title = isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro";
         }
@@ -198,8 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             document.documentElement.removeAttribute('data-theme');
         }
-
-        // Actualizar título del botón
         updateThemeTooltip(isDark);
     };
 
@@ -207,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.settings.theme === 'system') applyTheme();
     });
 
-    // FAB Toggle Logic
     themeToggleFab.addEventListener('click', () => {
         const isCurrentlyDark = document.documentElement.hasAttribute('data-theme');
         const newTheme = isCurrentlyDark ? 'light' : 'dark';
@@ -236,6 +255,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Lógica de Visibilidad del Panel Carrera ---
+    const updateRaceTrackState = () => {
+        const shouldBeVisible = appState.settings.raceEnabled === 'enabled' && appState.currentView === 'test-view';
+        
+        if (shouldBeVisible) {
+            raceTrackSidebar.classList.remove('hidden');
+            if (appState.settings.raceCollapsed) {
+                raceTrackSidebar.classList.add('collapsed');
+                raceToggleBtn.title = 'Mostrar Pista';
+            } else {
+                raceTrackSidebar.classList.remove('collapsed');
+                raceToggleBtn.title = 'Ocultar Pista';
+            }
+        } else {
+            raceTrackSidebar.classList.add('hidden');
+        }
+    };
+
+
     // --- VIEW NAVIGATION ---
     const showView = (viewId) => {
         appState.currentView = viewId;
@@ -243,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         views[viewId.replace('-view', '')].classList.add('active');
         
         updateSidebarState();
+        updateRaceTrackState();
 
         if (viewId === 'settings-view') {
             updateSettingsUI();
@@ -676,6 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebarFilter: 'all' 
         };
 
+        initRace(); // Inicializar la carrera
         startTimer();
         renderQuestion();
         showView('test-view');
@@ -738,10 +778,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const test = appState.currentTest;
         if (!test) return;
         
-        // Asegurarse que la pregunta actual cumple el filtro (si se cambió de filtro mientras se estaba en ella)
-        // O simplemente mostrarla, pero la navegación se adapta.
-        // Mostramos siempre la pregunta actual aunque no cumpla el filtro para evitar estado vacío.
-        
         const question = test.questions[test.currentIndex];
 
         testTitle.textContent = test.examName;
@@ -795,21 +831,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         prevBtn.disabled = prevIndex === -1;
         
-        // Si hay siguiente filtro válido, mostrar Next.
-        // Si no hay, y estamos en la última pregunta absoluta, mostrar Finalizar.
-        // Si no hay siguiente filtro válido, pero NO es la última absoluta (ej. filtro "Mal" y la última es "Bien"), ocultamos Next.
-        
         if (nextIndex !== -1) {
             nextBtn.classList.remove('hidden');
             finishBtn.classList.add('hidden');
         } else {
             nextBtn.classList.add('hidden');
-            // Mostrar botón finalizar solo si estamos en la última pregunta absoluta O si ya no hay más preguntas del filtro
-            // Por consistencia, permitimos finalizar si no hay más preguntas "Siguientes" disponibles en el filtro actual.
             finishBtn.classList.remove('hidden');
         }
         
-        // Caso especial: Si el usuario está en la última pregunta absoluta, siempre mostrar Finalizar
         if (test.currentIndex === test.questions.length - 1) {
             finishBtn.classList.remove('hidden');
             nextBtn.classList.add('hidden');
@@ -847,9 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
             optionsContainer.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
             optionButton.classList.add('selected');
             
-            // Auto-avance para preguntas simples
             if (appState.settings.autoAdvance === 'yes') {
-                // Pequeño delay para ver la selección
                 setTimeout(() => {
                     changeQuestion(1);
                 }, 100);
@@ -864,9 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 optionButton.classList.add('selected');
             }
             
-            // Auto-avance para preguntas múltiples
             if (appState.settings.autoAdvance === 'yes') {
-                // Si el número de respuestas seleccionadas coincide con el número de respuestas correctas, avanza
                 if (currentSelection.length === question.correct_answers.length) {
                     setTimeout(() => {
                         changeQuestion(1);
@@ -876,8 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         test.userAnswers[test.currentIndex] = currentSelection.sort();
         saveCurrentTestState();
-        
-        // Actualizar contadores del sidebar al responder
+        updateRace();
         renderQuestionSidebar();
     };
 
@@ -891,7 +915,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         saveCurrentTestState();
 
-        // USAR LA LÓGICA FILTRADA
         const newIndex = findAdjacentIndex(test.currentIndex, direction);
 
         if (newIndex !== -1) {
@@ -923,6 +946,178 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+
+    // --- LÓGICA DE LA CARRERA ---
+
+    // Función para barajar las pistas visualmente (DOM)
+    const shuffleRaceLanes = () => {
+        const trackLanesContainer = document.querySelector('.track-lanes');
+        if(trackLanesContainer) {
+            const lanes = Array.from(trackLanesContainer.children);
+            for (let i = lanes.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+            }
+            lanes.forEach(lane => trackLanesContainer.appendChild(lane));
+        }
+    };
+
+    // Función para obtener el orden actual de los carriles (IDs)
+    const getLaneOrder = () => {
+        const trackLanesContainer = document.querySelector('.track-lanes');
+        if (!trackLanesContainer) return [];
+        return Array.from(trackLanesContainer.children).map(lane => lane.id);
+    };
+
+    // Función para restaurar el orden visual basado en una lista de IDs guardada
+    const restoreLaneOrder = (orderList) => {
+        const trackLanesContainer = document.querySelector('.track-lanes');
+        if (!trackLanesContainer || !orderList) return;
+        
+        orderList.forEach(id => {
+            const lane = document.getElementById(id);
+            if (lane) {
+                trackLanesContainer.appendChild(lane); // Mover al final reordena el DOM
+            }
+        });
+    };
+
+    // Función para generar y asignar tiempos basados en pesos
+    const assignWeightedPaces = () => {
+        // 1. Definir el mejor tiempo fijo
+        const bestTime = 8.0;
+
+        // 2. Pool de tiempos posibles (NO incluye el 8.0 para no duplicarlo)
+        const timePool = [
+            8.2, 8.5, 8.8, 
+            9.0, 9.2, 9.5, 9.8, 
+            10.0, 10.2, 10.5, 10.8, 
+            11.0, 11.2, 11.5, 
+            12.0, 12.5, 
+            13.0, 13.5, 
+            14.0, 14.5, 
+            15.0
+        ];
+
+        const rivals = ['octopus', 'koala', 'dog', 'turtle'];
+
+        // Pesos de probabilidad
+        const weights = {
+            'octopus': 45,
+            'koala': 30,
+            'dog': 20,
+            'turtle': 5
+        };
+
+        // 3. Inicializar array con el tiempo fijo
+        let selectedTimes = [bestTime];
+        
+        // 4. Seleccionar 3 tiempos aleatorios más del pool
+        const poolCopy = [...timePool];
+        for(let i=0; i<3; i++) {
+            if(poolCopy.length === 0) break;
+            const randIdx = Math.floor(Math.random() * poolCopy.length);
+            selectedTimes.push(poolCopy[randIdx]);
+            poolCopy.splice(randIdx, 1);
+        }
+
+        // 5. Ordenar tiempos de mejor (menor) a peor (mayor)
+        selectedTimes.sort((a, b) => a - b);
+
+        const assignedPaces = {};
+        let availableRivals = [...rivals];
+
+        // Asignar tiempos ordenados a rivales basados en peso
+        for (let i = 0; i < selectedTimes.length; i++) {
+            const time = selectedTimes[i];
+            let totalWeight = 0;
+            availableRivals.forEach(r => totalWeight += weights[r]);
+
+            let randomVal = Math.random() * totalWeight;
+            let selectedRival = null;
+
+            for (const rival of availableRivals) {
+                randomVal -= weights[rival];
+                if (randomVal <= 0) {
+                    selectedRival = rival;
+                    break;
+                }
+            }
+            
+            if (!selectedRival) selectedRival = availableRivals[0];
+
+            assignedPaces[selectedRival] = time;
+            availableRivals = availableRivals.filter(r => r !== selectedRival);
+        }
+
+        return assignedPaces;
+    };
+
+    const initRace = () => {
+        if (appState.settings.raceEnabled !== 'enabled') return;
+        
+        const paces = assignWeightedPaces();
+
+        appState.raceState = {
+            cheetah: 0,
+            octopus: 0,
+            koala: 0,
+            dog: 0,
+            turtle: 0,
+            rivalPaces: paces,
+            laneOrder: [] // Inicializamos propiedad nueva
+        };
+        
+        Object.values(animalAvatars).forEach(el => el.style.bottom = '0%');
+
+        // Barajar posición en pista (DOM Shuffling)
+        shuffleRaceLanes();
+
+        // NUEVO: Guardar el orden visual resultante para el futuro
+        appState.raceState.laneOrder = getLaneOrder();
+    };
+    
+    const handleRaceToggle = () => {
+        appState.settings.raceCollapsed = !appState.settings.raceCollapsed;
+        saveState();
+        updateRaceTrackState();
+    };
+
+    const updateRace = () => {
+        if (appState.settings.raceEnabled !== 'enabled' || !appState.currentTest) return;
+
+        const test = appState.currentTest;
+        const totalQs = test.questions.length;
+        
+        const answeredCount = test.userAnswers.filter(a => a !== null && a.length > 0).length;
+        let cheetahProgress = (answeredCount / totalQs) * 100;
+        
+        const totalTimeElapsed = test.timeElapsed + (Date.now() - test.startTime) / 1000;
+        
+        const calculateRivalProgress = (pacePerQuestion) => {
+            const totalTargetTime = totalQs * pacePerQuestion;
+            if (totalTargetTime <= 0) return 0;
+            let prog = (totalTimeElapsed / totalTargetTime) * 100;
+            return Math.min(prog, 100);
+        };
+
+        const paces = appState.raceState.rivalPaces;
+
+        appState.raceState.cheetah = Math.min(cheetahProgress, 100);
+        appState.raceState.octopus = calculateRivalProgress(paces.octopus);
+        appState.raceState.koala = calculateRivalProgress(paces.koala);
+        appState.raceState.dog = calculateRivalProgress(paces.dog);
+        appState.raceState.turtle = calculateRivalProgress(paces.turtle);
+
+        // Actualizar DOM
+        animalAvatars.cheetah.style.bottom = `${appState.raceState.cheetah}%`;
+        animalAvatars.octopus.style.bottom = `${appState.raceState.octopus}%`;
+        animalAvatars.koala.style.bottom = `${appState.raceState.koala}%`;
+        animalAvatars.dog.style.bottom = `${appState.raceState.dog}%`;
+        animalAvatars.turtle.style.bottom = `${appState.raceState.turtle}%`;
+    };
+
+    // -----------------------------------
 
     const finishTest = () => {
         stopTimer();
@@ -983,8 +1178,80 @@ document.addEventListener('DOMContentLoaded', () => {
             saveState();
             renderExamSelector();
         }
-    
-        renderResults(score, correctCount);
+
+        // --- Lógica de la Carrera (Calculada ANTES de renderizar) ---
+        let raceHTMLString = '';
+        
+        if (appState.settings.raceEnabled === 'enabled') {
+            const avgTime = test.timeElapsed / test.questions.length;
+            const paces = appState.raceState.rivalPaces;
+
+            const participants = [
+                { name: 'GUEPI', icon: '🐆', time: avgTime, isUser: true },
+                { name: 'PULPI', icon: '🐙', time: paces.octopus, isUser: false },
+                { name: 'MANDIS', icon: '🐨', time: paces.koala, isUser: false },
+                { name: 'GOYITO', icon: '🐕', time: paces.dog, isUser: false },
+                { name: 'GARY', icon: '🐢', time: paces.turtle, isUser: false }
+            ];
+
+            participants.sort((a, b) => a.time - b.time);
+
+            const userRank = participants.findIndex(p => p.isUser) + 1;
+            const userWonRace = userRank === 1;
+            const userPassed = score >= 85; 
+            
+            let resultClass = '';
+            let msg = '';
+            let icon = '';
+
+            if (userWonRace && userPassed) {
+                resultClass = 'win-clean';
+                icon = '🏆🐆';
+                msg = `<h3>¡Victoria Limpia!</h3><p>¡Eres el rey de la pista! Ganaste la carrera con <strong>${avgTime.toFixed(1)}s/preg</strong> y aprobaste.</p>`;
+            } else if (userWonRace && !userPassed) {
+                resultClass = 'win-doping';
+                icon = '💉🐆';
+                msg = `<h3>Descalificado por Doping</h3><p>Fuiste el más rápido (<strong>${avgTime.toFixed(1)}s/preg</strong>), pero suspendiste.</p>`;
+            } else {
+                resultClass = 'lose';
+                icon = '🐆';
+                msg = `<h3>¡A Entrenar Más!</h3><p>Quedaste en posición <strong>${userRank}º</strong>. Tu tiempo: <strong>${avgTime.toFixed(1)}s/preg</strong>.</p>`;
+            }
+
+            let rankingHTML = `
+                <table class="race-ranking-table">
+                    <thead>
+                        <tr><th>Pos</th><th>Corredor</th><th>Tiempo Medio</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            participants.forEach((p, index) => {
+                const rowClass = p.isUser ? 'rank-row user-row' : 'rank-row';
+                const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
+                rankingHTML += `
+                    <tr class="${rowClass}">
+                        <td>${index + 1} ${medal}</td>
+                        <td><span class="rank-icon">${p.icon}</span> ${p.name}</td>
+                        <td>${p.time.toFixed(1)}s</td>
+                    </tr>
+                `;
+            });
+            rankingHTML += `</tbody></table>`;
+
+            // Generar el HTML completo del contenedor de carrera
+            raceHTMLString = `
+                <div id="race-result-container" class="${resultClass}">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">${icon}</div>
+                    ${msg}
+                    ${rankingHTML}
+                </div>
+            `;
+        }
+
+        // Llamamos a renderResults pasando el HTML de la carrera
+        renderResults(score, correctCount, raceHTMLString);
+
         localStorage.removeItem('testAppPausedTest');
         resumeContainer.classList.add('hidden');
         showView('results-view');
@@ -1001,12 +1268,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const resumeTest = () => {
         if (appState.currentTest) {
             appState.currentTest.startTime = Date.now();
+            
+            updateRaceTrackState();
+
+            // CORRECCIÓN: Restaurar orden visual en lugar de barajar aleatoriamente
+            if (appState.raceState && appState.raceState.laneOrder && appState.raceState.laneOrder.length > 0) {
+                restoreLaneOrder(appState.raceState.laneOrder);
+            } else {
+                // Fallback por si es un examen antiguo sin orden guardado
+                shuffleRaceLanes();
+                if (appState.raceState) {
+                    appState.raceState.laneOrder = getLaneOrder();
+                }
+            }
+
+            updateRace(); // Forzar actualización de posiciones
+            
             startTimer();
             renderQuestion();
             showView('test-view');
             resumeContainer.classList.add('hidden');
         }
     };
+
 
     const startTimer = () => {
         if (appState.timerInterval) clearInterval(appState.timerInterval);
@@ -1016,6 +1300,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const test = appState.currentTest;
             const timeLimit = appState.settings.timeLimit * 60;
             const totalElapsed = test.timeElapsed + (Date.now() - test.startTime) / 1000;
+
+            // Actualizar carrera
+            updateRace();
 
             if (timeLimit > 0) {
                 const remaining = timeLimit - totalElapsed;
@@ -1045,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- RESULTS & REVIEW ---
-    const renderResults = (score, correctCount) => {
+    const renderResults = (score, correctCount, raceHTML = '') => { 
         const PASSING_SCORE = 85;
         const test = appState.currentTest;
         const isPassed = score >= PASSING_SCORE;
@@ -1060,56 +1347,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let summaryHTML = `
         <h3 class="result-status ${statusClass}">${statusText}</h3>
-        <div class="results-grid">
-        <div class="result-card"><h4>Puntuación</h4><p>${formatPercentage(score)}</p></div>
-        <div class="result-card"><h4>Correctas</h4><p>${correctCount} de ${test.questions.length}</p></div>
-        <div class="result-card"><h4>Tiempo</h4><p>${Math.floor(test.timeElapsed / 60)}m ${Math.floor(test.timeElapsed % 60)}s</p></div>
-        </div>`;
         
-        // Limpiar el footer primero
-        resultsFooterButtons.innerHTML = '';
-        resultsFooterButtons.appendChild(restartTestBtn);
+        ${raceHTML} 
+        
+        <div class="results-grid">
+            <div class="result-card"><h4>Puntuación</h4><p>${formatPercentage(score)}</p></div>
+            <div class="result-card"><h4>Correctas</h4><p>${correctCount} de ${test.questions.length}</p></div>
+            <div class="result-card"><h4>Tiempo</h4><p>${Math.floor(test.timeElapsed / 60)}m ${Math.floor(test.timeElapsed % 60)}s</p></div>
+        </div>
+    `;
+    
+    resultsFooterButtons.innerHTML = '';
+    resultsFooterButtons.appendChild(restartTestBtn);
 
-        // Botón para reintentar falladas (a la derecha del reiniciar)
-        if (failedQuestionsInThisTest.length > 0) {
-            const retryBtn = document.createElement('button');
-            retryBtn.id = 'retry-failed-results-btn';
-            retryBtn.className = 'warning-btn';
-            retryBtn.textContent = `Reintentar las ${failedQuestionsInThisTest.length} Falladas`;
-            retryBtn.addEventListener('click', () => {
-                startTest(
-                    test.examCode, 
-                    failedQuestionsInThisTest.length, 
-                    failedQuestionsInThisTest, 
-                    true
-                );
-            });
-            resultsFooterButtons.appendChild(retryBtn);
-        }
-
-        resultsSummary.innerHTML = summaryHTML;
-        examTitleSummarySpan.textContent = test.examName;
-
-        const getFullAnswerText = (question, answerLetters) => {
-            if (!answerLetters || answerLetters.length === 0) return 'No respondida';
-            return answerLetters.map(letter => {
-                return question.options.find(opt => opt.startsWith(letter)) || letter;
-            }).join('<br>');
-        };
-
-        reviewContainer.innerHTML = '<h3>Revisión de Preguntas</h3>';
-        test.questions.forEach((q, index) => {
-            const userAnswer = test.userAnswers[index] || [];
-            const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
-            const reviewDiv = document.createElement('div');
-            reviewDiv.className = `review-question ${isCorrect ? 'correct' : 'incorrect'}`;
-            reviewDiv.innerHTML = `
-            <p><strong>${index + 1}. ${q.question_text}</strong></p>
-            <p><strong>Tu respuesta:</strong><br>${getFullAnswerText(q, userAnswer)}</p>
-            <p><strong>Respuesta correcta:</strong><br>${getFullAnswerText(q, q.correct_answers)}</p>`;
-            reviewContainer.appendChild(reviewDiv);
+    if (failedQuestionsInThisTest.length > 0) {
+        const retryBtn = document.createElement('button');
+        retryBtn.id = 'retry-failed-results-btn';
+        retryBtn.className = 'warning-btn';
+        retryBtn.textContent = `Reintentar las ${failedQuestionsInThisTest.length} Falladas`;
+        retryBtn.addEventListener('click', () => {
+            startTest(
+                test.examCode, 
+                failedQuestionsInThisTest.length, 
+                failedQuestionsInThisTest, 
+                true
+            );
         });
+        resultsFooterButtons.appendChild(retryBtn);
+    }
+
+    resultsSummary.innerHTML = summaryHTML;
+    examTitleSummarySpan.textContent = test.examName;
+
+    const getFullAnswerText = (question, answerLetters) => {
+        if (!answerLetters || answerLetters.length === 0) return 'No respondida';
+        return answerLetters.map(letter => {
+            return question.options.find(opt => opt.startsWith(letter)) || letter;
+        }).join('<br>');
     };
+
+    reviewContainer.innerHTML = '<h3>Revisión de Preguntas</h3>';
+    test.questions.forEach((q, index) => {
+        const userAnswer = test.userAnswers[index] || [];
+        const isCorrect = JSON.stringify(userAnswer.sort()) === JSON.stringify([...q.correct_answers].sort());
+        const reviewDiv = document.createElement('div');
+        reviewDiv.className = `review-question ${isCorrect ? 'correct' : 'incorrect'}`;
+        reviewDiv.innerHTML = `
+        <p><strong>${index + 1}. ${q.question_text}</strong></p>
+        <p><strong>Tu respuesta:</strong><br>${getFullAnswerText(q, userAnswer)}</p>
+        <p><strong>Respuesta correcta:</strong><br>${getFullAnswerText(q, q.correct_answers)}</p>`;
+        reviewContainer.appendChild(reviewDiv);
+    });
+};
 
     const showAnswer = () => {
         const test = appState.currentTest;
@@ -1131,6 +1420,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showAnswerBtn.disabled = true;
 
         renderQuestionSidebar();
+        updateRace(); 
     };
 
     // --- STATISTICS ---
@@ -1480,8 +1770,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </linearGradient>
                 </defs>
                 
-                <!-- Círculo de Fondo (Suspendidos - Rojo) -->
-                <!-- Este círculo está completo por debajo. Lo que no tape el verde, se verá rojo. -->
+                <!-- Círculo de Fondo (Suspendidos) -->
                 <circle cx="${cx}" cy="${cy}" r="${r}" 
                     fill="transparent" 
                     stroke="url(#gradDonutFail)" 
@@ -1491,7 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <title>Suspendidos: ${failCount} (${((1-passRatio)*100).toFixed(1)}%)</title>
                 </circle>
                 
-                <!-- Segmento de Aprobados (Verde - Superpuesto) -->
+                <!-- Segmento de Aprobados -->
                 <circle cx="${cx}" cy="${cy}" r="${r}" 
                     fill="transparent" 
                     stroke="url(#gradDonutPass)" 
@@ -1681,7 +1970,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
             
-            // Si está bloqueado, añadir data-progress para el tooltip CSS
             if (!isUnlocked) {
                 const progressText = achievement.getProgress(computedStats);
                 card.setAttribute('data-progress', progressText);
@@ -1962,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateSettingsUI = () => {
-        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, theme } = appState.settings;
+        const { timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, raceEnabled, theme } = appState.settings;
         document.querySelectorAll('#setting-time-group button').forEach(btn =>
             btn.classList.toggle('active', Number(btn.dataset.value) === timeLimit));
         document.querySelectorAll('#q-order-group button').forEach(btn =>
@@ -1975,6 +2263,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.toggle('active', btn.dataset.value === showImages));
         document.querySelectorAll('#auto-advance-group button').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.value === autoAdvance));
+        document.querySelectorAll('#race-setting-group button').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.value === raceEnabled));
         document.querySelectorAll('#theme-setting-group button').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.value === theme));
     };
@@ -1986,12 +2276,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const showSidebar = document.querySelector('#sidebar-setting-group .active').dataset.value;
         const showImages = document.querySelector('#image-setting-group .active').dataset.value;
         const autoAdvance = document.querySelector('#auto-advance-group .active').dataset.value;
+        const raceEnabled = document.querySelector('#race-setting-group .active').dataset.value;
         const theme = document.querySelector('#theme-setting-group .active').dataset.value;
 
-        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, theme };
+        appState.settings = { ...appState.settings, timeLimit, questionOrder, answerOrder, showSidebar, showImages, autoAdvance, raceEnabled, theme };
 
         saveState();
         updateSidebarState();
+        updateRaceTrackState();
         applyTheme(); // Aplicar cambios de tema inmediatamente
     };
     
@@ -2240,7 +2532,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!header || !questionSidebar) return;
             const headerHeight = header.offsetHeight;
             const headerRect = header.getBoundingClientRect();
-            questionSidebar.style.top = (headerRect.bottom <= 0) ? '0px' : `${headerHeight}px`;
+            const topPos = (headerRect.bottom <= 0) ? '0px' : `${headerHeight}px`;
+            
+            questionSidebar.style.top = topPos;
+            
+            if(raceTrackSidebar) {
+                // Ajustar también el sidebar de carrera para que no choque con header
+                raceTrackSidebar.style.top = (headerRect.bottom <= 0) ? '10px' : `${headerHeight + 10}px`;
+            }
         };
         adjustSidebarPosition();
 
@@ -2253,6 +2552,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         sidebarToggleBtn.addEventListener('click', handleSidebarToggle);
+        // NUEVO: Listener botón de toggle de carrera
+        if(raceToggleBtn) raceToggleBtn.addEventListener('click', handleRaceToggle);
+
         navButtons.selector.addEventListener('click', () => handleNavClick('selector-view'));
         navButtons.stats.addEventListener('click', () => handleNavClick('stats-view'));
         navButtons.settings.addEventListener('click', () => handleNavClick('settings-view'));

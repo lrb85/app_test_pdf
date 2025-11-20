@@ -178,6 +178,26 @@ nav button:hover {
     background: #666;
 }
 
+/* Botón Icono Generico */
+.icon-btn {
+    background: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 5px 10px;
+    font-size: 1.2rem;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.icon-btn:hover {
+    background: var(--light-bg);
+    transform: scale(1.1);
+}
+
+
 /* --- Botón de Tema (FAB) --- */
 #theme-toggle-fab {
     position: absolute;
@@ -324,7 +344,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
 .test-info {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
 }
 
 #question-counter {
@@ -338,6 +358,76 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     font-weight: bold;
     color: var(--primary-color);
     font-variant-numeric: tabular-nums;
+}
+
+/* --- PAUSE OVERLAY --- */
+#pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(6px);
+}
+
+.pause-modal {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 16px;
+    text-align: center;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    max-width: 500px;
+    width: 90%;
+    color: var(--text-color);
+}
+
+.pause-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.pause-modal h2 {
+    margin-top: 0;
+    font-size: 1.8rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+#pause-estimation-box {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+#pause-estimation-box p {
+    margin: 5px 0;
+}
+
+#resume-overlay-btn {
+    font-size: 1.1rem;
+    padding: 12px 40px;
+    background-color: var(--success-color);
+    border-radius: 30px;
+    margin-top: 10px;
+    width: 100%;
 }
 
 /* --- ESTILOS PARA IMÁGENES --- */
@@ -454,10 +544,26 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
 
 .results-footer {
     display: flex;
-    justify-content: center;
+    justify-content: space-between; /* Separar info de botones */
     align-items: center;
     color: var(--text-secondary);
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* No envolver para que funcione el ellipsis */
+    gap: 15px;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.results-footer-info {
+    flex: 1; /* Ocupar el espacio disponible */
+    min-width: 0; /* Crucial para que flexbox permita encoger el texto */
+    text-align: left;
+}
+
+.exam-title-summary {
+    margin: 0;
+    white-space: nowrap; /* No saltar de línea */
+    overflow: hidden; /* Ocultar lo que sobra */
+    text-overflow: ellipsis; /* Poner los tres puntos */
 }
 
 .results-footer-buttons {
@@ -617,6 +723,61 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     font-size: 1.2rem;
     font-weight: bold;
     margin: 0;
+    color: var(--text-color);
+}
+
+/* Race Stats Leaderboard */
+#race-stats-leaderboard {
+    margin-bottom: 2rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+#race-stats-leaderboard h4 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.race-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.race-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.race-stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.race-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.race-motivation {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-left: 4px solid var(--warning-color);
+    border-radius: 4px;
+    font-style: italic;
+    text-align: center;
     color: var(--text-color);
 }
 
@@ -1643,18 +1804,18 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     color: var(--text-color);
 }
 
-/* ESTILOS PARA LA TABLA DE CLASIFICACIÓN */
+/* ESTILOS PARA LA TABLA DE CLASIFICACIÓN (Compartido Resultados/Estadísticas) */
 .race-ranking-table {
     width: 100%;
-    max-width: 500px;
-    margin: 15px auto;
+    max-width: 100%; /* Modificado para adaptarse a contenedores */
+    margin: auto;
     border-collapse: collapse;
     font-size: 0.9rem;
 }
 
 .race-ranking-table th,
 .race-ranking-table td {
-    padding: 8px 12px;
+    padding: 8px;
     border-bottom: 1px solid var(--border-color);
     text-align: center;
 }
@@ -1665,11 +1826,13 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.8rem;
+    cursor: help; /* Indicador de que tiene tooltip */
 }
 
 .race-ranking-table .rank-row.user-row {
     font-weight: bold;
     border-left: 4px solid var(--primary-color);
+    background-color: var(--option-hover); /* Resaltar fila usuario */
 }
 
 .race-ranking-table .rank-icon {

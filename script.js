@@ -65,6 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
         turtle: document.getElementById('animal-turtle')
     };
     const raceResultContainer = document.getElementById('race-result-container');
+    const raceStatsLeaderboard = document.getElementById('race-stats-leaderboard');
+
+    // Pause Elements
+    const pauseBtn = document.getElementById('pause-test-btn');
+    const pauseOverlay = document.getElementById('pause-overlay');
+    const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
+    const pauseEstimationBox = document.getElementById('pause-estimation-box');
+
 
     // Sidebar Stats Elements
     const sbStatTotal = document.getElementById('sb-stat-total').querySelector('.sb-value');
@@ -114,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const practiceRecentBtn = document.getElementById('practice-recent-failed-btn');
     const practiceOver50FailedBtn = document.getElementById('practice-over-50-failed-btn');
     const resultsFooterButtons = document.getElementById('results-footer-buttons');
+    const resultsFooter = document.getElementById('results-footer'); // Elemento del DOM
     
     const progressChartContainer = document.getElementById('progress-chart-container');
     const additionalChartsGrid = document.getElementById('additional-charts-grid');
@@ -287,12 +296,25 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSettingsUI();
             importExportMsg.classList.add('hidden');
         }
+
+        // CORRECCIÓN: Asegurar que el botón de reanudar se muestre si vamos a la vista principal y hay un test pausado
+        if (viewId === 'selector-view') {
+            if (appState.currentTest && !appState.currentTest.isFinished) {
+                resumeContainer.classList.remove('hidden');
+            } else {
+                resumeContainer.classList.add('hidden');
+            }
+        }
     };
 
     const handleNavClick = (viewId) => {
-        if (appState.currentView === 'test-view') {
-            pauseTest();
+        if (appState.currentView === 'test-view' && appState.currentTest && !appState.currentTest.isPaused) {
+            stopTimer();
+            appState.currentTest.isPaused = true; 
+            saveCurrentTestState();
+            resumeContainer.classList.remove('hidden');
         }
+        
         showView(viewId);
         if (viewId === 'stats-view') {
             renderStats();
@@ -599,6 +621,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             card.addEventListener('click', () => {
+                // Si está pausado, no permitir navegación
+                if (appState.currentTest && appState.currentTest.isPaused) return;
+
                 const clickedIndex = Number(card.dataset.index);
 
                 if (test.currentIndex !== clickedIndex) {
@@ -712,13 +737,15 @@ document.addEventListener('DOMContentLoaded', () => {
             timeElapsed: 0,
             isFinished: false,
             isPracticeFailedTest: isPractice,
-            sidebarFilter: 'all' 
+            sidebarFilter: 'all',
+            isPaused: false
         };
 
         initRace(); // Inicializar la carrera
         startTimer();
         renderQuestion();
         showView('test-view');
+        updatePauseUI();
     };
 
     const startPracticeFailedTest = (examCode) => {
@@ -859,10 +886,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 block: 'center'
             });
         }
+        
+        // Si está pausado, deshabilitar interacciones
+        if (test.isPaused) {
+            disableInteractions();
+        }
     };
 
     const selectAnswer = (optionButton) => {
         const test = appState.currentTest;
+        if (!test || test.isPaused) return; // Bloquear si está pausado
+        
         if (test.answersRevealed[test.currentIndex] || test.isLocked[test.currentIndex]) {
             return;
         }
@@ -907,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const changeQuestion = (direction) => {
         const test = appState.currentTest;
-        if (!test || questionContainer.classList.contains('animating')) return;
+        if (!test || test.isPaused || questionContainer.classList.contains('animating')) return; // Bloquear si está pausado
 
         if (test.revisitedFromSidebar[test.currentIndex]) {
             test.isLocked[test.currentIndex] = true;
@@ -946,6 +980,104 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+
+    // --- LÓGICA DE PAUSA ---
+    const togglePause = () => {
+        const test = appState.currentTest;
+        if (!test) return;
+        
+        if (!test.isPaused) {
+            // Caso: PAUSAR (De en ejecución a pausado)
+            stopTimer(); // Detener el timer y guardar el tiempo acumulado ANTES de cambiar el flag
+            test.isPaused = true;
+        } else {
+            // Caso: REANUDAR (De pausado a en ejecución)
+            test.isPaused = false;
+            startTimer();
+        }
+        
+        saveCurrentTestState();
+        updatePauseUI();
+    };
+
+    const updatePauseUI = () => {
+        const test = appState.currentTest;
+        if (!test) return;
+
+        if (test.isPaused) {
+            pauseOverlay.classList.remove('hidden');
+            pauseBtn.textContent = '▶️'; // Icono Play
+            pauseBtn.title = 'Reanudar Examen';
+            
+            // Lógica de estimación de tiempo en pausa
+            const answeredCount = test.userAnswers.filter(a => a !== null && a.length > 0).length;
+            const remainingQs = test.questions.length - answeredCount;
+            
+            if (answeredCount > 0 && remainingQs > 0) {
+                const avgTimePerQuestion = test.timeElapsed / answeredCount;
+                const estimatedRemainingSeconds = avgTimePerQuestion * remainingQs;
+                
+                const pauseDurationMinutes = 5;
+                const now = new Date();
+                // Tiempo estimado = Ahora + 5 min pausa + Tiempo restante de examen
+                const estimatedFinishTime = new Date(now.getTime() + (pauseDurationMinutes * 60000) + (estimatedRemainingSeconds * 1000));
+                
+                const formatTime = (date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                pauseEstimationBox.innerHTML = `
+                    <p><strong>Ritmo actual:</strong> ${avgTimePerQuestion.toFixed(1)} segundos/pregunta.</p>
+                    <p>Te quedan <strong>${remainingQs}</strong> preguntas.</p>
+                    <p>Al ritmo actual tardarás unos <strong>${Math.ceil(estimatedRemainingSeconds / 60)} minutos</strong> más para terminar el examen.</p>
+                    <hr style="border:0; border-top:1px solid var(--border-color); margin:10px 0;">
+                    <p style="font-size:0.9em; color:var(--text-secondary);">
+                        Si reanudas en ${pauseDurationMinutes} minutos, terminarás aproximadamente a las <strong>${formatTime(estimatedFinishTime)}</strong>.
+                    </p>
+                `;
+                pauseEstimationBox.classList.remove('hidden');
+            } else {
+                pauseEstimationBox.innerHTML = "<p>Responde más preguntas para calcular una estimación de tiempo.</p>";
+            }
+
+            disableInteractions();
+        } else {
+            pauseOverlay.classList.add('hidden');
+            pauseBtn.textContent = '⏸️'; // Icono Pausa
+            pauseBtn.title = 'Pausar Examen';
+            enableInteractions();
+        }
+    };
+
+    const disableInteractions = () => {
+        const options = optionsContainer.querySelectorAll('.option');
+        options.forEach(opt => opt.style.pointerEvents = 'none');
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        finishBtn.disabled = true;
+        showAnswerBtn.disabled = true;
+    };
+
+    const enableInteractions = () => {
+        const test = appState.currentTest;
+        // Reactivar opciones solo si no están bloqueadas/reveladas
+        if (!test.isLocked[test.currentIndex] && !test.answersRevealed[test.currentIndex]) {
+            const options = optionsContainer.querySelectorAll('.option');
+            options.forEach(opt => opt.style.pointerEvents = 'auto');
+        }
+        
+        const prevIndex = findAdjacentIndex(test.currentIndex, -1);
+        prevBtn.disabled = prevIndex === -1;
+        
+        const nextIndex = findAdjacentIndex(test.currentIndex, 1);
+        nextBtn.disabled = nextIndex === -1; // Se gestiona visualmente en renderQuestion, pero aquí aseguramos estado
+        
+        finishBtn.disabled = false;
+        if (!test.answersRevealed[test.currentIndex]) {
+             showAnswerBtn.disabled = false;
+        }
+        
+        renderQuestion(); // Re-render para asegurar estado correcto de botones
+    };
+
 
     // --- LÓGICA DE LA CARRERA ---
 
@@ -1084,7 +1216,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateRace = () => {
-        if (appState.settings.raceEnabled !== 'enabled' || !appState.currentTest) return;
+        // Si está deshabilitado o pausado, no actualizar
+        if (appState.settings.raceEnabled !== 'enabled' || !appState.currentTest || appState.currentTest.isPaused) return;
 
         const test = appState.currentTest;
         const totalQs = test.questions.length;
@@ -1092,12 +1225,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const answeredCount = test.userAnswers.filter(a => a !== null && a.length > 0).length;
         let cheetahProgress = (answeredCount / totalQs) * 100;
         
-        const totalTimeElapsed = test.timeElapsed + (Date.now() - test.startTime) / 1000;
+        // Usar el tiempo calculado en startTimer (más preciso que recalcular aquí con Date.now si hay pausas)
+        // Pero para animación suave, usamos la diferencia actual si el timer está corriendo
+        let currentElapsed = test.timeElapsed;
+        if (appState.timerInterval) {
+             currentElapsed += (Date.now() - test.startTime) / 1000;
+        }
         
         const calculateRivalProgress = (pacePerQuestion) => {
             const totalTargetTime = totalQs * pacePerQuestion;
             if (totalTargetTime <= 0) return 0;
-            let prog = (totalTimeElapsed / totalTargetTime) * 100;
+            let prog = (currentElapsed / totalTargetTime) * 100;
             return Math.min(prog, 100);
         };
 
@@ -1116,6 +1254,51 @@ document.addEventListener('DOMContentLoaded', () => {
         animalAvatars.dog.style.bottom = `${appState.raceState.dog}%`;
         animalAvatars.turtle.style.bottom = `${appState.raceState.turtle}%`;
     };
+
+    // --- SOUND EFFECTS (Longer) ---
+    const playSound = (type) => {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                if (type === 'pass') {
+                    // Sonido "Tada" más largo
+                    osc.type = 'sine';
+                    // Arpegio rápido
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); // E5
+                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.4); // G5
+                    osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.6); // C6
+                    
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 2.0);
+                } else if (type === 'fail') {
+                    // Sonido "Fail" más largo
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.5);
+                    osc.frequency.linearRampToValueAtTime(60, ctx.currentTime + 1.5);
+                    
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 1.5);
+                }
+            }
+        } catch(e) { console.log("Audio not supported"); }
+    };
+
 
     // -----------------------------------
 
@@ -1166,21 +1349,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     
         const score = (correctCount / test.questions.length) * 100;
-    
-        if (examStats) {
-            examStats.attempts.push({
-                date: new Date().toISOString(),
-                score: score,
-                time: test.timeElapsed,
-                questionCount: test.questions.length
-            });
-            appState.stats[test.examCode] = examStats;
-            saveState();
-            renderExamSelector();
-        }
-
-        // --- Lógica de la Carrera (Calculada ANTES de renderizar) ---
+        
+        // --- Lógica de la Carrera (Calculada ANTES de guardar para persistencia) ---
         let raceHTMLString = '';
+        let raceDataToSave = null;
         
         if (appState.settings.raceEnabled === 'enabled') {
             const avgTime = test.timeElapsed / test.questions.length;
@@ -1200,6 +1372,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const userWonRace = userRank === 1;
             const userPassed = score >= 85; 
             
+            // Datos para guardar en estadísticas
+            raceDataToSave = {
+                rank: userRank,
+                avgTime: avgTime,
+                isWin: userWonRace // Solo indica si ganó la carrera físicamente, la lógica de logro verificará el aprobado
+            };
+
             let resultClass = '';
             let msg = '';
             let icon = '';
@@ -1221,7 +1400,11 @@ document.addEventListener('DOMContentLoaded', () => {
             let rankingHTML = `
                 <table class="race-ranking-table">
                     <thead>
-                        <tr><th>Pos</th><th>Corredor</th><th>Tiempo Medio</th></tr>
+                        <tr>
+                            <th title="Posición final en la carrera">Pos</th>
+                            <th title="Nombre del corredor">Corredor</th>
+                            <th title="Tiempo medio por pregunta">Tiempo Medio</th>
+                        </tr>
                     </thead>
                     <tbody>
             `;
@@ -1240,13 +1423,39 @@ document.addEventListener('DOMContentLoaded', () => {
             rankingHTML += `</tbody></table>`;
 
             // Generar el HTML completo del contenedor de carrera
+            // AÑADIDO ID para el icono del animal
             raceHTMLString = `
                 <div id="race-result-container" class="${resultClass}">
-                    <div style="font-size: 3rem; margin-bottom: 10px;">${icon}</div>
+                    <div id="race-result-icon" style="font-size: 3rem; margin-bottom: 10px; cursor: pointer;" title="¡Haz click para oír tu resultado!">${icon}</div>
                     ${msg}
                     ${rankingHTML}
                 </div>
             `;
+        }
+    
+        if (examStats) {
+            const attemptData = {
+                date: new Date().toISOString(),
+                score: score,
+                time: test.timeElapsed,
+                questionCount: test.questions.length
+            };
+            
+            if (raceDataToSave) {
+                attemptData.raceStats = raceDataToSave;
+            }
+
+            examStats.attempts.push(attemptData);
+            appState.stats[test.examCode] = examStats;
+            saveState();
+            renderExamSelector();
+        }
+
+        // Sonidos
+        if (score >= 85) {
+            playSound('pass');
+        } else {
+            playSound('fail');
         }
 
         // Llamamos a renderResults pasando el HTML de la carrera
@@ -1258,20 +1467,25 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const pauseTest = () => {
-        stopTimer();
-        saveCurrentTestState();
-        if (appState.currentTest && !appState.currentTest.isFinished) {
-            resumeContainer.classList.remove('hidden');
+        if (!appState.currentTest || appState.currentTest.isFinished) return;
+        // Si ya está pausado, no hace nada (o podría hacer toggle, pero mejor explícito)
+        if (!appState.currentTest.isPaused) {
+            togglePause();
         }
+        saveCurrentTestState();
+        resumeContainer.classList.remove('hidden');
     };
 
     const resumeTest = () => {
         if (appState.currentTest) {
             appState.currentTest.startTime = Date.now();
             
+            // Al reanudar desde el menú principal, nos aseguramos de quitar pausa si estaba puesta
+            appState.currentTest.isPaused = false;
+
             updateRaceTrackState();
 
-            // CORRECCIÓN: Restaurar orden visual en lugar de barajar aleatoriamente
+            // Restaurar orden visual en lugar de barajar aleatoriamente
             if (appState.raceState && appState.raceState.laneOrder && appState.raceState.laneOrder.length > 0) {
                 restoreLaneOrder(appState.raceState.laneOrder);
             } else {
@@ -1282,11 +1496,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            updateRace(); // Forzar actualización de posiciones
+            // CORRECCIÓN: Forzar actualización de posiciones eliminando la transición temporalmente
+            // para evitar que se vean deslizarse desde el inicio.
+            const avatars = Object.values(animalAvatars);
+            avatars.forEach(el => el.style.transition = 'none');
+            
+            updateRace(); 
+            
+            // Forzar reflow
+            avatars.forEach(el => el.offsetHeight);
+            
+            // Restaurar transición
+            avatars.forEach(el => el.style.transition = '');
+
             
             startTimer();
             renderQuestion();
             showView('test-view');
+            updatePauseUI(); // Asegurar UI correcta
             resumeContainer.classList.add('hidden');
         }
     };
@@ -1298,6 +1525,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appState.timerInterval = setInterval(() => {
             const test = appState.currentTest;
+            // Si está pausado, no avanzar (doble check)
+            if (test.isPaused) return; 
+
             const timeLimit = appState.settings.timeLimit * 60;
             const totalElapsed = test.timeElapsed + (Date.now() - test.startTime) / 1000;
 
@@ -1325,7 +1555,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopTimer = () => {
         clearInterval(appState.timerInterval);
         appState.timerInterval = null;
-        if (appState.currentTest && appState.currentTest.startTime) {
+        if (appState.currentTest && appState.currentTest.startTime && !appState.currentTest.isPaused) {
+            // Solo sumar tiempo si no estaba ya pausado antes
             appState.currentTest.timeElapsed += (Date.now() - appState.currentTest.startTime) / 1000;
             appState.currentTest.startTime = null;
         }
@@ -1357,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     `;
     
+    // Lógica de botones del footer
     resultsFooterButtons.innerHTML = '';
     resultsFooterButtons.appendChild(restartTestBtn);
 
@@ -1378,6 +1610,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resultsSummary.innerHTML = summaryHTML;
     examTitleSummarySpan.textContent = test.examName;
+
+    // Mover el footer debajo del H3 de estado
+    const statusHeader = resultsSummary.querySelector('.result-status');
+    const footerElement = document.getElementById('results-footer');
+    if(statusHeader && footerElement) {
+        statusHeader.insertAdjacentElement('afterend', footerElement);
+    }
+    
+    // Añadir listener al icono del animal para reproducir sonido
+    const animalIcon = document.getElementById('race-result-icon');
+    if(animalIcon) {
+        animalIcon.addEventListener('click', () => {
+            playSound(isPassed ? 'pass' : 'fail');
+        });
+    }
 
     const getFullAnswerText = (question, answerLetters) => {
         if (!answerLetters || answerLetters.length === 0) return 'No respondida';
@@ -1462,12 +1709,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Renderizar gráfico
         renderChart(attempts);
-        renderAdditionalCharts(attempts); // NUEVO
+        renderAdditionalCharts(attempts);
         
-        // Check logros
+        // Check logros (Recalcula en cada render para permitir bloqueo)
         checkAchievements();
         
         displayCalculatedStats(attempts);
+        renderRaceLeaderboard(attempts); 
     
         if (selectedCode !== 'all') {
             displayExamSpecificStats(selectedCode);
@@ -1553,6 +1801,196 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+    };
+
+    // Función auxiliar para generar números pseudo-aleatorios basados en semilla
+    const seededRandom = (seedStr) => {
+        let hash = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+            hash |= 0;
+        }
+        const x = Math.sin(hash) * 10000;
+        return x - Math.floor(x);
+    };
+
+    // Función centralizada para calcular las estadísticas de la carrera
+    const getRaceLeaderboardStats = (attempts) => {
+        const raceAttempts = attempts.filter(a => a.raceStats);
+        if (raceAttempts.length === 0) return { allRunners: [], totalRaces: 0 };
+
+        const userStats = { name: 'GUEPI', icon: '🐆', isUser: true, wins: 0, dqs: 0, pos: {1:0, 2:0, 3:0, 4:0, 5:0}, totalTime: 0, bestTime: Infinity, count: 0 };
+        
+        const rivals = [
+            { name: 'PULPI', icon: '🐙', basePace: 9.0 },
+            { name: 'MANDIS', icon: '🐨', basePace: 11.0 },
+            { name: 'GOYITO', icon: '🐕', basePace: 13.0 },
+            { name: 'GARY', icon: '🐢', basePace: 15.0 }
+        ];
+
+        const rivalStatsMap = {};
+        rivals.forEach(r => {
+            rivalStatsMap[r.name] = { 
+                ...r, 
+                isUser: false, 
+                wins: 0, 
+                dqs: 0, 
+                pos: {1:0, 2:0, 3:0, 4:0, 5:0}, 
+                totalTime: 0, 
+                bestTime: Infinity, 
+                count: 0 
+            };
+        });
+
+        raceAttempts.forEach(attempt => {
+            const uTime = attempt.raceStats.avgTime;
+            const uRankPure = attempt.raceStats.rank;
+            const uScore = attempt.score;
+            const uIsPass = uScore >= 85;
+            
+            userStats.count++;
+            userStats.totalTime += uTime;
+            if(uTime < userStats.bestTime) userStats.bestTime = uTime;
+
+            let userIsDQ = false;
+            if (uRankPure === 1 && !uIsPass) {
+                userIsDQ = true;
+                userStats.dqs++; 
+            } else {
+                if (userStats.pos[uRankPure] !== undefined) {
+                    userStats.pos[uRankPure]++;
+                }
+                if (uRankPure === 1 && uIsPass) {
+                    userStats.wins++;
+                }
+            }
+
+            // Simular rivales usando semilla consistente para que los resultados sean estables
+            const currentRaceRivals = rivals.map(r => {
+                const rand = seededRandom(attempt.date + r.name);
+                const variation = (rand * 0.2) - 0.1; 
+                const time = r.basePace * (1 + variation);
+                return { name: r.name, time: time };
+            });
+
+            const raceResults = [
+                { name: userStats.name, time: uTime, isUser: true },
+                ...currentRaceRivals
+            ];
+            
+            raceResults.sort((a, b) => a.time - b.time);
+
+            raceResults.forEach((r, idx) => {
+                if (!r.isUser) {
+                    let rank = idx + 1;
+                    // Ajuste si el usuario fue DQ siendo primero:
+                    if (userIsDQ && raceResults[0].isUser) {
+                         rank = idx; 
+                    }
+
+                    const rStat = rivalStatsMap[r.name];
+                    rStat.count++;
+                    rStat.totalTime += r.time;
+                    if (r.time < rStat.bestTime) rStat.bestTime = r.time;
+                    
+                    if (rank >= 1 && rank <= 5) {
+                        rStat.pos[rank]++;
+                        if (rank === 1) rStat.wins++;
+                    }
+                }
+            });
+        });
+
+        const allRunners = [userStats, ...Object.values(rivalStatsMap)];
+
+        allRunners.forEach(r => {
+            r.avgTime = r.count > 0 ? r.totalTime / r.count : 0;
+        });
+
+        // Ordenar clasificación global (Estilo Medallero Olímpico)
+        allRunners.sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            if (b.pos[2] !== a.pos[2]) return b.pos[2] - a.pos[2];
+            if (b.pos[3] !== a.pos[3]) return b.pos[3] - a.pos[3];
+            if (b.pos[4] !== a.pos[4]) return b.pos[4] - a.pos[4];
+            return b.pos[5] - a.pos[5];
+        });
+        
+        return { allRunners, totalRaces: raceAttempts.length };
+    };
+
+    const renderRaceLeaderboard = (attempts) => {
+        const { allRunners, totalRaces } = getRaceLeaderboardStats(attempts);
+
+        if (totalRaces === 0) {
+            raceStatsLeaderboard.innerHTML = '<p style="text-align:center; color:var(--text-secondary);">Realiza un examen con la "Pista de Atletismo" activada para ver tus estadísticas de carrera.</p>';
+            return;
+        }
+
+        const userStats = allRunners.find(r => r.isUser);
+
+        // GENERAR HTML
+        let rowsHTML = '';
+        allRunners.forEach((p, index) => {
+            const rowClass = p.isUser ? 'rank-row user-row' : 'rank-row';
+            const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
+            
+            let breakdown = `
+                <span class="pos-tag p1" title="Veces 1º">🥇${p.pos[1]}</span>
+                <span class="pos-tag p2" title="Veces 2º">🥈${p.pos[2]}</span>
+                <span class="pos-tag p3" title="Veces 3º">🥉${p.pos[3]}</span>
+            `;
+            if (p.isUser) {
+                breakdown += `<span class="pos-tag pdq" title="Veces Descalificado">🚫${p.dqs}</span>`;
+            }
+
+            rowsHTML += `
+                <tr class="${rowClass}">
+                    <td>${index + 1} ${medal}</td>
+                    <td style="text-align:left; padding-left:15px;">
+                        <span class="rank-icon">${p.icon}</span> 
+                        ${p.name}
+                    </td>
+                    <td style="font-weight:bold; color:var(--success-color);">${p.count}</td>
+                    <td class="breakdown-cell">${breakdown}</td>
+                    <td>${p.bestTime === Infinity ? '-' : p.bestTime.toFixed(1)}s</td>
+                    <td>${p.avgTime.toFixed(1)}s</td>
+                </tr>
+            `;
+        });
+
+        const userWinRate = userStats && userStats.count > 0 ? (userStats.wins / userStats.count * 100) : 0;
+        let message = "";
+        if (userWinRate > 50) {
+            message = "¡Increíble! Eres un auténtico guepardo. Dominas la pista.";
+        } else if (userWinRate > 20) {
+            message = "¡Buen ritmo! Estás ganando consistencia.";
+        } else if (userStats && userStats.dqs > userStats.wins) {
+            message = "¡Cuidado! Corres mucho pero fallas demasiado. La velocidad sin control no sirve.";
+        } else {
+            message = "¡No te rindas! La constancia es la clave.";
+        }
+
+        raceStatsLeaderboard.innerHTML = `
+            <table class="race-ranking-table full-stats">
+                <thead>
+                    <tr>
+                        <th title="Posición en la tabla">Rank</th>
+                        <th title="Nombre del corredor">Corredor</th>
+                        <th title="Número total de carreras realizadas">Carreras</th>
+                        <th title="Desglose de posiciones históricas">Historial (1º/2º/3º/DQ)</th>
+                        <th title="Mejor tiempo registrado por pregunta">Mejor Ritmo</th>
+                        <th title="Tiempo promedio histórico por pregunta">Ritmo Global</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHTML}
+                </tbody>
+            </table>
+            <div class="race-motivation">
+                "${message}"
+            </div>
+        `;
     };
     
     // --- CHART LOGIC (Spline + Gradient + Tooltip) ---
@@ -1811,18 +2249,18 @@ document.addEventListener('DOMContentLoaded', () => {
         { 
             id: 'first_steps', 
             title: 'Primeros Pasos', 
-            desc: 'Completa tu primer examen.', 
-            check: (stats) => stats.totalAttempts >= 1, 
+            desc: 'Aprueba tu primer examen.', // Cambio de texto
+            check: (stats) => stats.totalPassed >= 1, // Cambio: totalPassed
             icon: '🥚',
-            getProgress: (stats) => stats.totalAttempts >= 1 ? '' : 'Haz 1 examen.'
+            getProgress: (stats) => stats.totalPassed >= 1 ? '' : 'Aprueba 1 examen.'
         },
         { 
             id: 'student', 
             title: 'Estudiante', 
-            desc: 'Completa 10 exámenes.', 
-            check: (stats) => stats.totalAttempts >= 10, 
+            desc: 'Aprueba 10 exámenes.', // Cambio de texto
+            check: (stats) => stats.totalPassed >= 10, // Cambio: totalPassed
             icon: '📚',
-            getProgress: (stats) => stats.totalAttempts >= 10 ? '' : `Faltan ${10 - stats.totalAttempts} exámenes.`
+            getProgress: (stats) => stats.totalPassed >= 10 ? '' : `Faltan ${10 - stats.totalPassed} aprobados.`
         },
         { 
             id: 'streak', 
@@ -1867,10 +2305,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { 
             id: 'expert', 
             title: 'Experto', 
-            desc: 'Completa 50 exámenes.', 
-            check: (stats) => stats.totalAttempts >= 50, 
+            desc: 'Aprueba 50 exámenes.', // Cambio de texto
+            check: (stats) => stats.totalPassed >= 50, // Cambio: totalPassed
             icon: '🎓',
-            getProgress: (stats) => stats.totalAttempts >= 50 ? '' : `Faltan ${50 - stats.totalAttempts} exámenes.`
+            getProgress: (stats) => stats.totalPassed >= 50 ? '' : `Faltan ${50 - stats.totalPassed} aprobados.`
         },
         { 
             id: 'master', 
@@ -1909,12 +2347,49 @@ document.addEventListener('DOMContentLoaded', () => {
             check: (stats) => stats.totalQuestionsAnswered >= 10000, 
             icon: '🛡️',
             getProgress: (stats) => stats.totalQuestionsAnswered >= 10000 ? '' : `Faltan ${10000 - stats.totalQuestionsAnswered} pregs.`
+        },
+        // --- 4 NUEVOS LOGROS DE CARRERA (ACTUALIZADOS) ---
+        {
+            id: 'first_victory',
+            title: 'Primera Victoria',
+            desc: 'Gana una carrera y aprueba el examen.',
+            check: (stats) => stats.raceCleanWins >= 1,
+            icon: '🥇',
+            getProgress: (stats) => stats.raceCleanWins >= 1 ? '' : 'Gana 1 carrera limpiamente.'
+        },
+        {
+            id: 'global_leader',
+            title: 'Líder Global',
+            desc: 'Sé el primero en la clasificación global tras 5 exámenes.',
+            check: (stats) => stats.isGlobalLeader,
+            icon: '🌍',
+            getProgress: (stats) => {
+                if (stats.totalRaces < 5) return `Faltan ${5 - stats.totalRaces} carreras.`;
+                return stats.isGlobalLeader ? '' : 'Sé el nº1 en el ranking global.';
+            }
+        },
+        {
+            id: 'speed_king',
+            title: 'Rey de la Velocidad',
+            desc: 'Gana una carrera con un ritmo medio inferior a 8s por pregunta y aprobando.',
+            check: (stats) => stats.hasFastWin,
+            icon: '🚀',
+            getProgress: (stats) => stats.hasFastWin ? '' : 'Gana (<8s/preg) y aprueba.'
+        },
+        {
+            id: 'marathon_racer',
+            title: 'Corredor de Fondo',
+            desc: 'Completa 10 exámenes con el modo carrera activado.',
+            check: (stats) => stats.totalRaces >= 10,
+            icon: '🏟️',
+            getProgress: (stats) => stats.totalRaces >= 10 ? '' : `Faltan ${10 - stats.totalRaces} carreras.`
         }
     ];
 
     const checkAchievements = () => {
         let totalAttempts = 0;
         let totalTime = 0;
+        let totalPassed = 0;
         let totalCorrect = 0;
         let totalScoreSum = 0;
         let hasPerfectScore = false;
@@ -1924,6 +2399,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let maxStreak = 0;
         let totalQuestionsAnswered = 0;
         let hasLongExam = false;
+        
+        // Variables para logros de carrera
+        let raceCleanWins = 0;
+        let totalRaces = 0;
+        let hasFastWin = false;
+        let globalRaceTimeSum = 0;
 
         const allAttempts = Object.values(appState.stats).flatMap(s => s.attempts).sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -1934,39 +2415,61 @@ document.addEventListener('DOMContentLoaded', () => {
             totalScoreSum += attempt.score;
             totalQuestionsAnswered += attempt.questionCount;
             
-            // Maratonista: > 50 preguntas
             if (attempt.questionCount > 50) hasLongExam = true;
 
             const correctInExam = Math.round((attempt.score / 100) * attempt.questionCount);
             totalCorrect += correctInExam;
 
-            // PERFECCIONISTA: 100% en examen >= 50 preguntas
             if (attempt.score === 100 && attempt.questionCount >= 50) hasPerfectScore = true;
             
             if (attempt.score >= 85 && attempt.score < 90) hasCloseCall = true;
             
-            // Velocista: > 50 preguntas Y tiempo medio < 10s Y aprobado (>=85)
             if (attempt.questionCount > 50 && (attempt.time / attempt.questionCount) < 10 && attempt.score >= 85) {
                 hasSpeedRun = true;
             }
 
             if (attempt.score >= 85) {
+                totalPassed++; 
                 currentStreak++;
             } else {
                 currentStreak = 0;
             }
             if (currentStreak > maxStreak) maxStreak = currentStreak;
+            
+            // Cálculos de carrera
+            if (attempt.raceStats) {
+                totalRaces++;
+                globalRaceTimeSum += attempt.raceStats.avgTime;
+                
+                if (attempt.raceStats.rank === 1 && attempt.score >= 85) {
+                    raceCleanWins++;
+                    if (attempt.raceStats.avgTime < 8) hasFastWin = true;
+                }
+            }
         });
 
         const avgScore = totalAttempts > 0 ? (totalScoreSum / totalAttempts) : 0;
+        
+        // Lógica Líder Global
+        let isGlobalLeader = false;
+        if (totalRaces >= 5) {
+            const { allRunners } = getRaceLeaderboardStats(allAttempts); // Usar la función centralizada
+            if (allRunners.length > 0 && allRunners[0].isUser) {
+                isGlobalLeader = true;
+            }
+        }
 
+        // 3. AÑADIR totalPassed AL OBJETO computedStats
         const computedStats = {
-            totalAttempts, totalTime, totalCorrect, avgScore, hasPerfectScore, hasCloseCall, hasSpeedRun, maxStreak, totalQuestionsAnswered, hasLongExam, currentStreak
+            totalAttempts, totalPassed, totalTime, totalCorrect, avgScore, hasPerfectScore, hasCloseCall, hasSpeedRun, maxStreak, totalQuestionsAnswered, hasLongExam, currentStreak,
+            raceCleanWins, isGlobalLeader, totalRaces, hasFastWin
         };
 
         achievementsContainer.innerHTML = '';
         achievementsList.forEach(achievement => {
+            // Recalcular SIEMPRE para permitir rebloqueo si bajan stats
             const isUnlocked = achievement.check(computedStats);
+            
             const card = document.createElement('div');
             card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
             
@@ -1989,6 +2492,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ... (Rest of the code: displayCalculatedStats, etc.)
     const displayCalculatedStats = (attempts) => {
+        // ... (código existente sin cambios relevantes)
         const totalAttempts = attempts.length;
         if (totalAttempts === 0) {
             statsDetailsContainer.innerHTML = '<p>Aún no hay estadísticas.</p>';
@@ -2011,6 +2515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
+    // ... resto del código igual ...
     const displayExamSpecificStats = (examCode) => {
         const examStat = appState.stats[examCode];
         if (!examStat || examStat.attempts.length === 0) {
@@ -2387,6 +2892,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.currentView !== 'test-view' || !appState.currentTest) return;
         if (e.target.tagName === 'INPUT') return;
 
+        // Si está pausado, ignorar teclas excepto quizás algo específico (aquí bloqueamos todo)
+        if (appState.currentTest.isPaused) return;
+
         switch (e.key) {
             case 'ArrowLeft':
                 if (!prevBtn.disabled) changeQuestion(-1);
@@ -2432,13 +2940,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleTouchStart = (e) => {
-        if (appState.currentView !== 'test-view' || !appState.currentTest) return;
+        if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.isPaused) return;
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
     };
 
     const handleTouchEnd = (e) => {
-        if (appState.currentView !== 'test-view' || !appState.currentTest) return;
+        if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.isPaused) return;
         const touchEndX = e.changedTouches[0].screenX;
         const touchEndY = e.changedTouches[0].screenY;
         const deltaX = touchEndX - touchStartX;
@@ -2455,7 +2963,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleBodyTouchStart = (e) => {
-        if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.answersRevealed[appState.currentTest.currentIndex] || appState.currentTest.isLocked[appState.currentTest.currentIndex]) {
+        if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.answersRevealed[appState.currentTest.currentIndex] || appState.currentTest.isLocked[appState.currentTest.currentIndex] || appState.currentTest.isPaused) {
             return;
         }
 
@@ -2610,6 +3118,10 @@ document.addEventListener('DOMContentLoaded', () => {
         practiceTop100Btn.addEventListener('click', () => startGlobalPracticeFailedTest(100));
         practiceRecentBtn.addEventListener('click', () => startRecentlyFailedTest(20));
         practiceOver50FailedBtn.addEventListener('click', startOver50FailedTest);
+        
+        // NUEVO: Listener para el botón de Pausa
+        pauseBtn.addEventListener('click', togglePause);
+        resumeOverlayBtn.addEventListener('click', togglePause);
 
 
         // Listeners for Import/Export

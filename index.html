@@ -25,7 +25,7 @@
         </nav>
     </header>
 
-    <!-- NUEVO: Pista de Atletismo (Sidebar Izquierda) -->
+    <!-- Pista de Atletismo (Sidebar Izquierda) -->
     <div id="race-track-sidebar" class="hidden">
         <button id="race-toggle-btn" title="Ocultar Pista">
             <span></span>
@@ -85,6 +85,8 @@
                     <div class="test-info">
                         <div id="question-counter"></div>
                         <div id="timer"></div>
+                        <!-- NUEVO: Botón de Pausa -->
+                        <button id="pause-test-btn" class="icon-btn" title="Pausar Examen">⏸️</button>
                     </div>
                 </div>
                 <div id="question-container">
@@ -100,6 +102,19 @@
                         <button id="prev-btn">Anterior</button>
                         <button id="next-btn">Siguiente</button>
                         <button id="finish-btn" class="hidden">Finalizar Examen</button>
+                    </div>
+                </div>
+                
+                <!-- Overlay de Pausa (Movido aquí dentro para ocultarse al cambiar de vista) -->
+                <div id="pause-overlay" class="hidden">
+                    <div class="pause-modal">
+                        <div class="pause-icon">🐆</div>
+                        <h2>Examen Pausado</h2>
+                        <p id="pause-message-primary">El reloj se ha detenido.</p>
+                        <div id="pause-estimation-box">
+                            <!-- Se rellena con JS -->
+                        </div>
+                        <button id="resume-overlay-btn">Reanudar Examen</button>
                     </div>
                 </div>
             </div>
@@ -152,6 +167,12 @@
                 
                 <div id="stats-details"></div>
 
+                <!-- Estadísticas de Carrera -->
+                <h3>Clasificación de Carreras 🐆</h3>
+                <div id="race-stats-leaderboard">
+                    <!-- Se rellena con JS -->
+                </div>
+
                 <!-- Sección de Logros -->
                 <h3>Logros Desbloqueados</h3>
                 <div id="achievements-container" class="achievements-grid">
@@ -166,7 +187,6 @@
                         <p class="no-data-msg">Realiza algunos exámenes para ver tu progreso.</p>
                     </div>
                     
-                    <!-- NUEVO CONTENEDOR PARA GRÁFICAS ADICIONALES -->
                     <div id="additional-charts-grid" class="charts-grid">
                         <!-- Se rellenará con JS -->
                     </div>
@@ -337,6 +357,7 @@
     </div>
 
     <script src="script.js"></script>
+    <!-- Scripts de exámenes -->
     <script src="exams/H12-811_V1.0_full.js"></script>
     <script src="exams/H12-811_V1.0_882.js"></script>
     <script src="exams/H12-811_V1.0_parcial_extra.js"></script>

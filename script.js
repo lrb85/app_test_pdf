@@ -1372,11 +1372,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const userWonRace = userRank === 1;
             const userPassed = score >= 85; 
             
+            // --- CAMBIO AQUÍ: Crear un array simplificado con los resultados de TODOS ---
+            const detailedResults = participants.map((p, index) => ({
+                name: p.name,
+                time: p.time,
+                rank: index + 1,
+                isUser: p.isUser
+            }));
+
             // Datos para guardar en estadísticas
             raceDataToSave = {
                 rank: userRank,
                 avgTime: avgTime,
-                isWin: userWonRace // Solo indica si ganó la carrera físicamente, la lógica de logro verificará el aprobado
+                isWin: userWonRace,
+                detailedResults: detailedResults 
             };
 
             let resultClass = '';
@@ -1865,37 +1874,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Simular rivales usando semilla consistente para que los resultados sean estables
-            const currentRaceRivals = rivals.map(r => {
-                const rand = seededRandom(attempt.date + r.name);
-                const variation = (rand * 0.2) - 0.1; 
-                const time = r.basePace * (1 + variation);
-                return { name: r.name, time: time };
-            });
+            // --- INICIO DE LA CORRECCIÓN ---
+            let raceResults = [];
 
-            const raceResults = [
-                { name: userStats.name, time: uTime, isUser: true },
-                ...currentRaceRivals
-            ];
-            
-            raceResults.sort((a, b) => a.time - b.time);
+            // CASO 1: Tenemos datos detallados guardados (Nueva lógica)
+            if (attempt.raceStats.detailedResults) {
+                raceResults = attempt.raceStats.detailedResults;
+            } 
+            // CASO 2: Datos antiguos (Fallback a simulación)
+            else {
+                // Simular rivales usando semilla consistente (Lógica antigua)
+                const currentRaceRivals = rivals.map(r => {
+                    const rand = seededRandom(attempt.date + r.name);
+                    const variation = (rand * 0.2) - 0.1; 
+                    const time = r.basePace * (1 + variation);
+                    return { name: r.name, time: time, isUser: false };
+                });
+
+                raceResults = [
+                    { name: userStats.name, time: uTime, isUser: true },
+                    ...currentRaceRivals
+                ];
+                
+                raceResults.sort((a, b) => a.time - b.time);
+            }
 
             raceResults.forEach((r, idx) => {
                 if (!r.isUser) {
                     let rank = idx + 1;
-                    // Ajuste si el usuario fue DQ siendo primero:
-                    if (userIsDQ && raceResults[0].isUser) {
-                         rank = idx; 
+                    
+                    // Si estamos usando datos detallados, el rank ya viene calculado, 
+                    // pero si usamos el fallback o recálculo, usamos el índice.
+                    // En los datos detallados guardados, r.rank ya es correcto.
+                    if (attempt.raceStats.detailedResults) {
+                        rank = r.rank;
+                    } else {
+                        // Ajuste si el usuario fue DQ siendo primero (Solo para lógica antigua):
+                        if (userIsDQ && raceResults[0].isUser) {
+                             rank = idx; 
+                        }
                     }
 
                     const rStat = rivalStatsMap[r.name];
-                    rStat.count++;
-                    rStat.totalTime += r.time;
-                    if (r.time < rStat.bestTime) rStat.bestTime = r.time;
-                    
-                    if (rank >= 1 && rank <= 5) {
-                        rStat.pos[rank]++;
-                        if (rank === 1) rStat.wins++;
+                    if (rStat) {
+                        rStat.count++;
+                        rStat.totalTime += r.time;
+                        if (r.time < rStat.bestTime) rStat.bestTime = r.time;
+                        
+                        if (rank >= 1 && rank <= 5) {
+                            rStat.pos[rank]++;
+                            if (rank === 1) rStat.wins++;
+                        }
                     }
                 }
             });

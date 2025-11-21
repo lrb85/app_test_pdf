@@ -1,3 +1,8 @@
+window.devFlags = {
+    unlockVolley: false,
+    noLimitVolley: false
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     let appState = {
@@ -36,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         results: document.getElementById('results-view'),
         stats: document.getElementById('stats-view'),
         settings: document.getElementById('settings-view'),
+        volleyball: document.getElementById('volleyball-view') 
     };
     const navButtons = {
         selector: document.getElementById('nav-selector'),
@@ -72,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pauseOverlay = document.getElementById('pause-overlay');
     const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
     const pauseEstimationBox = document.getElementById('pause-estimation-box');
-
+    const playVolleyPauseBtn = document.getElementById('play-volley-pause-btn'); 
 
     // Sidebar Stats Elements
     const sbStatTotal = document.getElementById('sb-stat-total').querySelector('.sb-value');
@@ -122,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const practiceRecentBtn = document.getElementById('practice-recent-failed-btn');
     const practiceOver50FailedBtn = document.getElementById('practice-over-50-failed-btn');
     const resultsFooterButtons = document.getElementById('results-footer-buttons');
-    const resultsFooter = document.getElementById('results-footer'); // Elemento del DOM
+    const resultsFooter = document.getElementById('results-footer');
     
     const progressChartContainer = document.getElementById('progress-chart-container');
     const additionalChartsGrid = document.getElementById('additional-charts-grid');
@@ -286,8 +292,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- VIEW NAVIGATION ---
     const showView = (viewId) => {
         appState.currentView = viewId;
-        Object.values(views).forEach(view => view.classList.remove('active'));
-        views[viewId.replace('-view', '')].classList.add('active');
+        Object.values(views).forEach(view => {
+            if(view) view.classList.remove('active')
+        });
+        
+        if(views[viewId.replace('-view', '')]) {
+            views[viewId.replace('-view', '')].classList.add('active');
+        } else if (viewId === 'volleyball-view') {
+            // Caso especial para la vista de voleibol añadida
+            document.getElementById('volleyball-view').classList.add('active');
+        }
         
         updateSidebarState();
         updateRaceTrackState();
@@ -297,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             importExportMsg.classList.add('hidden');
         }
 
-        // CORRECCIÓN: Asegurar que el botón de reanudar se muestre si vamos a la vista principal y hay un test pausado
+        // Asegurar que el botón de reanudar se muestre si vamos a la vista principal y hay un test pausado
         if (viewId === 'selector-view') {
             if (appState.currentTest && !appState.currentTest.isFinished) {
                 resumeContainer.classList.remove('hidden');
@@ -431,6 +445,272 @@ document.addEventListener('DOMContentLoaded', () => {
         const questions = getOver50PercentFailedQuestions();
         if (questions.length === 0) return;
         startTest(`PRACTICE_GLOBAL_OVER_50_FAILED`, questions.length, questions, true);
+    };
+
+    // --- FUNCIONES GLOBALES PARA VOLEIBOL ---
+    // Definidas en window para acceso desde volleyball.js
+    window.getCurrentSkillPoints = () => {
+        let spentPoints = parseInt(localStorage.getItem('testAppVolleySpentPoints') || '0');
+        
+        // Calcular puntos ganados:
+        // 1 punto por examen realizado (totalAttempts)
+        // 1 punto extra por aprobado (totalPassed) -> Total 2 por aprobar
+        // 1 punto por logro desbloqueado
+        
+        let totalAttempts = 0;
+        let totalPassed = 0;
+        
+        const allAttempts = Object.values(appState.stats).flatMap(s => s.attempts);
+        totalAttempts = allAttempts.length;
+        totalPassed = allAttempts.filter(a => a.score >= 85).length;
+        
+        // Contar logros desbloqueados visualmente
+        const unlockedAchievements = document.querySelectorAll('.achievement-card.unlocked').length;
+        // Si no se han renderizado aun, recalcular
+        if(achievementsContainer.innerHTML === '') {
+             // Forzar check rápido
+             // ... (se asume que checkAchievements actualiza el DOM o podemos calcularlo)
+             // Simplificación: Asumimos que se renderizaron al menos una vez o usamos 0 si es primera carga
+        }
+        
+        const totalEarned = totalAttempts + totalPassed + unlockedAchievements;
+        return Math.max(0, totalEarned - spentPoints);
+    };
+
+    window.consumeSkillPoint = () => {
+        let spent = parseInt(localStorage.getItem('testAppVolleySpentPoints') || '0');
+        localStorage.setItem('testAppVolleySpentPoints', spent + 1);
+    };
+
+
+    window.getTieBreakerQuestion = () => {
+        const failedQs = getGlobalFailedQuestions('count');
+        if (failedQs.length > 0) {
+            // Coger una aleatoria de las top 10
+            const q = failedQs[Math.floor(Math.random() * Math.min(10, failedQs.length))];
+            
+            // Formatear para el juego
+            const optionsFormatted = q.options.map(opt => {
+                const letter = opt.substring(0, 1);
+                return {
+                    text: opt,
+                    isCorrect: q.correct_answers.includes(letter)
+                };
+            });
+
+            return {
+                text: q.question_text,
+                options: optionsFormatted
+            };
+        }
+        return null;
+    };
+
+    window.registerVolleyResult = (playerKey, opponentKey, isWin, scoreP, scoreO) => {
+        // Estructura:
+        // {
+        //    global: { played, wins, goals... },
+        //    byAnimal: { 'cheetah': { played, wins... } },
+        //    vsRival: { 'octopus': { played, wins... } } // Stats CONTRA ese rival
+        // }
+        
+        let vStats = JSON.parse(localStorage.getItem('testAppVolleyMatchStatsDetailed') || JSON.stringify({
+            global: { played:0, wins:0, goalsScored:0, cleanSheets:0 },
+            byAnimal: {},
+            vsRival: {}
+        }));
+        
+        // Helper update
+        const updateEntry = (obj) => {
+            if(!obj) obj = { played:0, wins:0, goalsScored:0, goalsConceded:0 };
+            obj.played++;
+            if(isWin) obj.wins++;
+            obj.goalsScored += scoreP;
+            obj.goalsConceded = (obj.goalsConceded || 0) + scoreO;
+            if(isWin && scoreO === 0) obj.cleanSheets = (obj.cleanSheets || 0) + 1; // Solo para global/player
+            return obj;
+        };
+
+        // Actualizar Global
+        vStats.global = updateEntry(vStats.global);
+        
+        // Actualizar Por Animal Usado
+        vStats.byAnimal[playerKey] = updateEntry(vStats.byAnimal[playerKey]);
+        
+        // Actualizar Vs Rival
+        vStats.vsRival[opponentKey] = updateEntry(vStats.vsRival[opponentKey]);
+
+        // Guardar (Mantenemos el legacy 'testAppVolleyMatchStats' simple por si acaso, pero usamos el nuevo)
+        localStorage.setItem('testAppVolleyMatchStatsDetailed', JSON.stringify(vStats));
+        
+        // Actualizar simple para logros legacy
+        let simpleStats = JSON.parse(localStorage.getItem('testAppVolleyMatchStats') || '{"wins":0, "played":0, "goalsScored":0, "cleanSheets":0}');
+        simpleStats.played++;
+        simpleStats.goalsScored += scoreP;
+        if(isWin) simpleStats.wins++;
+        if(isWin && scoreO === 0) simpleStats.cleanSheets++;
+        localStorage.setItem('testAppVolleyMatchStats', JSON.stringify(simpleStats));
+
+        // REGISTRO DE PARTIDOS DIARIOS (NUEVO)
+        const today = new Date().toISOString().split('T')[0];
+        let dailyStats = JSON.parse(localStorage.getItem('testAppVolleyDailyMatches') || '{}');
+        if (dailyStats.date !== today) {
+            dailyStats = { date: today, count: 0 };
+        }
+        dailyStats.count++;
+        localStorage.setItem('testAppVolleyDailyMatches', JSON.stringify(dailyStats));
+    };
+
+    const VOLLEY_ANIMALS_INFO = {
+        cheetah: { icon: '🐆', name: 'Guepi' },
+        octopus: { icon: '🐙', name: 'Pulpi' },
+        koala: { icon: '🐨', name: 'Mandis' },
+        dog: { icon: '🐕', name: 'Goyito' },
+        turtle: { icon: '🐢', name: 'Gary' }
+    };
+
+    window.returnFromVolleyball = (context) => {
+        if (context === 'pause') {
+            showView('test-view');
+            updatePauseUI(); 
+        } else {
+            handleNavClick('stats-view');
+        }
+    };
+
+    // --- FUNCIONES DE ACCESO A VOLEIBOL (GATEKEEPER) ---
+    
+    const checkVolleyUnlock = () => {
+        // DEV FLAG OVERRIDE
+        if (window.devFlags.unlockVolley) return true;
+
+        // Desbloqueo automático por fecha
+        if (new Date() > new Date('2025-12-14')) return true;
+
+        // Desbloqueo por examen: >500 preguntas y <= 25 fallos
+        // Y >800 preguntas y <=25 fallos
+        const allAttempts = Object.values(appState.stats).flatMap(s => s.attempts);
+        
+        const hasPassed500 = allAttempts.some(a => {
+            const mistakes = a.questionCount - Math.round((a.score/100) * a.questionCount);
+            return a.questionCount > 500 && mistakes <= 25;
+        });
+
+        const hasPassed800 = allAttempts.some(a => {
+            const mistakes = a.questionCount - Math.round((a.score/100) * a.questionCount);
+            return a.questionCount > 800 && mistakes <= 25;
+        });
+
+        return hasPassed500 && hasPassed800;
+    };
+
+    const checkVolleyNoLimit = () => {
+        // DEV FLAG OVERRIDE
+        if (window.devFlags.noLimitVolley) return true;
+
+        // Desbloqueo automático por fecha
+        if (new Date() > new Date('2025-12-14')) return true;
+
+        // Desbloqueo por examen: >500 y >800 con 0 fallos (score 100%)
+        const allAttempts = Object.values(appState.stats).flatMap(s => s.attempts);
+        
+        const hasPerfect500 = allAttempts.some(a => a.questionCount > 500 && a.score === 100);
+        const hasPerfect800 = allAttempts.some(a => a.questionCount > 800 && a.score === 100);
+
+        return hasPerfect500 && hasPerfect800;
+    };
+
+    window.attemptVolleyAccess = (context) => {
+        // 1. Comprobar Desbloqueo General (redundante si el botón se deshabilita, pero buena práctica)
+        if (!checkVolleyUnlock()) {
+            alert("⚠️ ¡Juego Bloqueado!\n\nPara desbloquear el Voleibol debes:\n1. Aprobar un examen de >500 preguntas con igual o menos de 25 fallos.\n2. Aprobar un examen de >800 preguntas con igual o menos de 25 fallos.\n\n(O esperar al 14/12/2025)");
+            return;
+        }
+
+        // 2. Comprobar Límite Diario
+        const hasNoLimit = checkVolleyNoLimit();
+        if (!hasNoLimit) {
+            const today = new Date().toISOString().split('T')[0];
+            let dailyStats = JSON.parse(localStorage.getItem('testAppVolleyDailyMatches') || '{}');
+            
+            if (dailyStats.date === today && dailyStats.count >= 10) {
+                document.getElementById('volley-limit-modal').classList.remove('hidden');
+                return;
+            }
+        }
+
+        // 3. Presentar Quiz Guardián
+        showVolleyGatekeeperModal(context);
+    };
+
+    const showVolleyGatekeeperModal = (context) => {
+        const modal = document.getElementById('volley-quiz-modal');
+        const qText = document.getElementById('vq-text');
+        const optsContainer = document.getElementById('vq-options');
+        const resultMsg = document.getElementById('vq-result-msg');
+        
+        // Reset UI
+        resultMsg.textContent = '';
+        resultMsg.className = '';
+        optsContainer.innerHTML = '';
+        
+        // Obtener una pregunta fallada (top 10)
+        const failedQs = getGlobalFailedQuestions('count').slice(0, 10);
+        
+        // Si no hay fallos, permitir jugar directo (premio al buen estudiante)
+        if (failedQs.length === 0) {
+            modal.classList.add('hidden');
+            enterVolleyGame(context);
+            return;
+        }
+
+        const q = failedQs[Math.floor(Math.random() * failedQs.length)];
+        qText.innerHTML = q.question_text;
+
+        // Mezclar opciones si es necesario o mostrarlas
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option';
+            btn.textContent = opt;
+            btn.style.padding = '10px';
+            btn.style.margin = '5px 0';
+            btn.style.width = '100%';
+            btn.style.textAlign = 'left';
+            btn.onclick = () => {
+                // Check answer
+                const selectedLetter = opt.substring(0, 1);
+                // La respuesta puede ser múltiple, pero simplificamos para este mini-juego a single check si incluye la letra
+                const isCorrect = q.correct_answers.includes(selectedLetter);
+                
+                if (isCorrect) {
+                    btn.style.background = 'var(--success-color)';
+                    btn.style.color = 'white';
+                    resultMsg.textContent = "¡Correcto! Accediendo...";
+                    resultMsg.style.color = 'var(--success-color)';
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        enterVolleyGame(context);
+                    }, 1000);
+                } else {
+                    btn.style.background = 'var(--danger-color)';
+                    btn.style.color = 'white';
+                    resultMsg.textContent = "Incorrecto. Acceso denegado.";
+                    resultMsg.style.color = 'var(--danger-color)';
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                    }, 1500);
+                }
+            };
+            optsContainer.appendChild(btn);
+        });
+
+        document.getElementById('vq-cancel-btn').onclick = () => modal.classList.add('hidden');
+        modal.classList.remove('hidden');
+    };
+
+    const enterVolleyGame = (context) => {
+        showView('volleyball-view');
+        window.VolleyGame.openSelectionScreen(window.getCurrentSkillPoints(), context);
     };
 
 
@@ -1009,6 +1289,22 @@ document.addEventListener('DOMContentLoaded', () => {
             pauseBtn.textContent = '▶️'; // Icono Play
             pauseBtn.title = 'Reanudar Examen';
             
+            // Comprobar acceso a Voleibol para el botón de pausa
+            const isVolleyUnlocked = checkVolleyUnlock();
+            if (playVolleyPauseBtn) {
+                if (!isVolleyUnlocked) {
+                    playVolleyPauseBtn.disabled = true;
+                    playVolleyPauseBtn.style.opacity = "0.5";
+                    playVolleyPauseBtn.style.cursor = "not-allowed";
+                    playVolleyPauseBtn.title = "Bloqueado: Aprueba exámenes de >500 y >800 preguntas con igual o menos de 25 fallos (o espera al 14/12/2025).";
+                } else {
+                    playVolleyPauseBtn.disabled = false;
+                    playVolleyPauseBtn.style.opacity = "1";
+                    playVolleyPauseBtn.style.cursor = "pointer";
+                    playVolleyPauseBtn.title = "Jugar Partido";
+                }
+            }
+
             // Lógica de estimación de tiempo en pausa
             const answeredCount = test.userAnswers.filter(a => a !== null && a.length > 0).length;
             const remainingQs = test.questions.length - answeredCount;
@@ -1707,6 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     
         displayStatsForSelection();
+        renderVolleyLeaderboard(); // Añadir el leaderboard de volley
     };
 
     const displayStatsForSelection = () => {
@@ -1916,6 +2213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const rStat = rivalStatsMap[r.name];
+                    // Protección por si el nombre no coincide
                     if (rStat) {
                         rStat.count++;
                         rStat.totalTime += r.time;
@@ -2020,6 +2318,120 @@ document.addEventListener('DOMContentLoaded', () => {
                 "${message}"
             </div>
         `;
+    };
+
+    // --- RENDER VOLLEY LEADERBOARD (NUEVO) ---
+    const renderVolleyLeaderboard = () => {
+        let vStats = JSON.parse(localStorage.getItem('testAppVolleyMatchStatsDetailed') || 'null');
+        
+        // Fallback si no hay stats nuevas
+        if (!vStats) {
+            // Intentar migrar stats viejas o mostrar vacío
+            vStats = { global: { played:0 }, byAnimal:{}, vsRival:{} };
+        }
+
+        const container = document.getElementById('achievements-container');
+        let volleySection = document.getElementById('volley-stats-section');
+        
+        if (!volleySection) {
+            volleySection = document.createElement('div');
+            volleySection.id = 'volley-stats-section';
+            container.parentNode.insertBefore(volleySection, container.previousElementSibling);
+        }
+        
+        // Generar filas para MIS ANIMALES
+        let myAnimalsRows = '';
+        Object.entries(vStats.byAnimal).sort((a,b) => b[1].wins - a[1].wins).forEach(([key, stats]) => {
+            const info = VOLLEY_ANIMALS_INFO[key] || {icon:'?', name:key};
+            const winRate = stats.played > 0 ? ((stats.wins/stats.played)*100).toFixed(1) : 0;
+            myAnimalsRows += `
+                <tr>
+                    <td style="text-align:left;">${info.icon} ${info.name}</td>
+                    <td>${stats.played}</td>
+                    <td style="color:var(--success-color); font-weight:bold;">${stats.wins}</td>
+                    <td>${winRate}%</td>
+                    <td>${stats.goalsScored} - ${stats.goalsConceded}</td>
+                </tr>
+            `;
+        });
+
+        if(myAnimalsRows === '') myAnimalsRows = '<tr><td colspan="5" style="color:#888;">No has jugado partidos aún.</td></tr>';
+
+        // Generar filas para RIVALES
+        let rivalRows = '';
+        Object.entries(vStats.vsRival).sort((a,b) => b[1].played - a[1].played).forEach(([key, stats]) => {
+            const info = VOLLEY_ANIMALS_INFO[key] || {icon:'?', name:key};
+            // Aquí wins significa cuántas veces LE HE GANADO yo a él.
+            const winRate = stats.played > 0 ? ((stats.wins/stats.played)*100).toFixed(1) : 0;
+            rivalRows += `
+                <tr>
+                    <td style="text-align:left;">Vs ${info.icon} ${info.name}</td>
+                    <td>${stats.played}</td>
+                    <td>${stats.wins}</td>
+                    <td>${winRate}%</td>
+                    <td>${stats.goalsScored} - ${stats.goalsConceded}</td>
+                </tr>
+            `;
+        });
+
+        if(rivalRows === '') rivalRows = '<tr><td colspan="5" style="color:#888;">No hay datos de rivales.</td></tr>';
+
+        volleySection.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px; margin-bottom:15px;">
+                <h3 style="margin:0;">Estadísticas de Voleibol 🏐</h3>
+                <button id="btn-play-volley-stats" style="background:var(--warning-color); color:#000; font-weight:bold;">Jugar Partido</button>
+            </div>
+            
+            <div class="volley-stats-header">
+                <button class="volley-tab-btn active" onclick="document.getElementById('v-tab-1').style.display='table';document.getElementById('v-tab-2').style.display='none';this.classList.add('active');this.nextElementSibling.classList.remove('active')">Mis Jugadores</button>
+                <button class="volley-tab-btn" onclick="document.getElementById('v-tab-1').style.display='none';document.getElementById('v-tab-2').style.display='table';this.classList.add('active');this.previousElementSibling.classList.remove('active')">Vs Rivales</button>
+            </div>
+
+            <div id="volley-leaderboard-table" style="background:var(--light-bg); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+                <table id="v-tab-1" class="race-ranking-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Animal</th>
+                            <th>Jugados</th>
+                            <th>Victorias</th>
+                            <th>% Win</th>
+                            <th>Goles (F-C)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${myAnimalsRows}</tbody>
+                </table>
+
+                <table id="v-tab-2" class="race-ranking-table" style="width:100%; display:none;">
+                    <thead>
+                        <tr>
+                            <th>Rival</th>
+                            <th>Enfrentamientos</th>
+                            <th>Le ganaste</th>
+                            <th>% Éxito</th>
+                            <th>Goles (F-C)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rivalRows}</tbody>
+                </table>
+            </div>
+        `;
+
+        // MODIFICADO: Lógica del botón jugar con estado deshabilitado
+        const playBtn = document.getElementById('btn-play-volley-stats');
+        const isUnlocked = checkVolleyUnlock();
+        
+        if (!isUnlocked) {
+            playBtn.disabled = true;
+            playBtn.style.opacity = "0.5";
+            playBtn.style.cursor = "not-allowed";
+            playBtn.title = "Bloqueado: Aprueba exámenes de >500 y >800 preguntas con igual o menos de 25 fallos (o espera al 14/12/2025).";
+        } else {
+            playBtn.disabled = false;
+            playBtn.title = "Jugar Partido";
+            playBtn.addEventListener('click', () => {
+                window.attemptVolleyAccess('stats');
+            });
+        }
     };
     
     // --- CHART LOGIC (Spline + Gradient + Tooltip) ---
@@ -2412,7 +2824,31 @@ document.addEventListener('DOMContentLoaded', () => {
             check: (stats) => stats.totalRaces >= 10,
             icon: '🏟️',
             getProgress: (stats) => stats.totalRaces >= 10 ? '' : `Faltan ${10 - stats.totalRaces} carreras.`
-        }
+        },
+        // --- 8 NUEVOS LOGROS DE VOLEIBOL ---
+        // MODIFICADO: Eliminados 'v_rookie' y 'v_winner', sustituidos por los nuevos
+        { 
+            id: 'v_unlock_play', 
+            title: 'Acceso a la Cancha', 
+            desc: 'Desbloquea el modo Voleibol. Pasa exámenes de >500 y >800 pregs con <=25 fallos (o espera al 14/12/25).', 
+            check: () => checkVolleyUnlock(), 
+            icon: '🔑', 
+            getProgress: () => checkVolleyUnlock() ? '' : 'Supera los retos o espera.' 
+        },
+        { 
+            id: 'v_unlock_limit', 
+            title: 'Voley Infinito', 
+            desc: 'Elimina el límite diario de partidos. Saca 100% en exámenes de >500 y >800 pregs (o espera al 14/12/25).', 
+            check: () => checkVolleyNoLimit(), 
+            icon: '♾️', 
+            getProgress: () => checkVolleyNoLimit() ? '' : 'Saca 100% en retos o espera.' 
+        },
+        { id: 'v_pro', title: 'Profesional', desc: 'Gana 5 partidos.', check: (stats) => stats.volleyStats.wins >= 5, icon: '🎖️', getProgress: (s) => s.volleyStats.wins >= 5 ? '' : `Llevas ${s.volleyStats.wins}/5 victorias.` },
+        { id: 'v_clean', title: 'Muralla', desc: 'Gana un partido sin recibir puntos (7-0).', check: (stats) => stats.volleyStats.cleanSheets >= 1, icon: '🧱', getProgress: (s) => s.volleyStats.cleanSheets >= 1 ? '' : 'Gana 7-0.' },
+        { id: 'v_veteran', title: 'Veterano de la Red', desc: 'Juega 10 partidos.', check: (stats) => stats.volleyStats.played >= 10, icon: '👴', getProgress: (s) => s.volleyStats.played >= 10 ? '' : `Llevas ${s.volleyStats.played}/10 partidos.` },
+        { id: 'v_scorer', title: 'Rematador', desc: 'Anota un total de 50 puntos.', check: (stats) => stats.volleyStats.goalsScored >= 50, icon: '💪', getProgress: (s) => s.volleyStats.goalsScored >= 50 ? '' : `Llevas ${s.volleyStats.goalsScored}/50 puntos.` },
+        { id: 'v_pumped', title: 'Gimnasio', desc: 'Mejora una estadística de cualquier animal.', check: () => parseInt(localStorage.getItem('testAppVolleySpentPoints')||0) > 0, icon: '💊', getProgress: () => parseInt(localStorage.getItem('testAppVolleySpentPoints')||0) > 0 ? '' : 'Gasta 1 punto.' },
+        { id: 'v_maxed', title: 'Evolución Completa', desc: 'Gasta 10 puntos de habilidad en total.', check: () => parseInt(localStorage.getItem('testAppVolleySpentPoints')||0) >= 10, icon: '🧬', getProgress: () => parseInt(localStorage.getItem('testAppVolleySpentPoints')||0) >= 10 ? '' : `Gastados: ${parseInt(localStorage.getItem('testAppVolleySpentPoints')||0)}/10.` }
     ];
 
     const checkAchievements = () => {
@@ -2487,11 +2923,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 isGlobalLeader = true;
             }
         }
+        
+        // LEER ESTADÍSTICAS DE VOLEY
+        const volleyStats = JSON.parse(localStorage.getItem('testAppVolleyMatchStats') || '{"wins":0, "played":0, "goalsScored":0, "cleanSheets":0}');
 
         // 3. AÑADIR totalPassed AL OBJETO computedStats
         const computedStats = {
             totalAttempts, totalPassed, totalTime, totalCorrect, avgScore, hasPerfectScore, hasCloseCall, hasSpeedRun, maxStreak, totalQuestionsAnswered, hasLongExam, currentStreak,
-            raceCleanWins, isGlobalLeader, totalRaces, hasFastWin
+            raceCleanWins, isGlobalLeader, totalRaces, hasFastWin, volleyStats
         };
 
         achievementsContainer.innerHTML = '';
@@ -3027,6 +3466,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setupModalListeners();
         loadExams();
         setupSidebarStatsListeners();
+        
+        // INICIALIZAR VOLEIBOL
+        if(window.VolleyGame) {
+            window.VolleyGame.init('volley-canvas');
+        } else {
+            console.error("VolleyGame no está definido. Verifique volleyball.js.");
+        }
 
         // --- INICIO DEL CÓDIGO PARA EL SELECTOR PERSONALIZADO ---
         const customSelectWrapper = document.querySelector('.custom-select-wrapper');
@@ -3157,6 +3603,13 @@ document.addEventListener('DOMContentLoaded', () => {
         exportProgressBtn.addEventListener('click', exportTestState);
         importProgressBtn.addEventListener('click', () => importFileInput.click());
         importFileInput.addEventListener('change', importTestState);
+
+        // Listener para botón de voleibol en modal de pausa
+        if (playVolleyPauseBtn) {
+            playVolleyPauseBtn.addEventListener('click', () => {
+                window.attemptVolleyAccess('pause');
+            });
+        }
     };
 
     init();

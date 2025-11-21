@@ -192,6 +192,7 @@ nav button:hover {
     justify-content: center;
     align-items: center;
 }
+
 .icon-btn:hover {
     background: var(--light-bg);
     transform: scale(1.1);
@@ -381,7 +382,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     border-radius: 16px;
     text-align: center;
     border: 2px solid var(--primary-color);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     max-width: 500px;
     width: 90%;
     color: var(--text-color);
@@ -394,9 +395,17 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .pause-modal h2 {
@@ -544,26 +553,33 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
 
 .results-footer {
     display: flex;
-    justify-content: space-between; /* Separar info de botones */
+    justify-content: space-between;
+    /* Separar info de botones */
     align-items: center;
     color: var(--text-secondary);
-    flex-wrap: nowrap; /* No envolver para que funcione el ellipsis */
+    flex-wrap: nowrap;
+    /* No envolver para que funcione el ellipsis */
     gap: 15px;
     width: 100%;
     margin-top: 1rem;
 }
 
 .results-footer-info {
-    flex: 1; /* Ocupar el espacio disponible */
-    min-width: 0; /* Crucial para que flexbox permita encoger el texto */
+    flex: 1;
+    /* Ocupar el espacio disponible */
+    min-width: 0;
+    /* Crucial para que flexbox permita encoger el texto */
     text-align: left;
 }
 
 .exam-title-summary {
     margin: 0;
-    white-space: nowrap; /* No saltar de línea */
-    overflow: hidden; /* Ocultar lo que sobra */
-    text-overflow: ellipsis; /* Poner los tres puntos */
+    white-space: nowrap;
+    /* No saltar de línea */
+    overflow: hidden;
+    /* Ocultar lo que sobra */
+    text-overflow: ellipsis;
+    /* Poner los tres puntos */
 }
 
 .results-footer-buttons {
@@ -1296,6 +1312,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(-100%);
         opacity: 0;
@@ -1307,6 +1324,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1318,6 +1336,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(100%);
         opacity: 1;
@@ -1329,6 +1348,7 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
         transform: translateX(-100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1807,7 +1827,8 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
 /* ESTILOS PARA LA TABLA DE CLASIFICACIÓN (Compartido Resultados/Estadísticas) */
 .race-ranking-table {
     width: 100%;
-    max-width: 100%; /* Modificado para adaptarse a contenedores */
+    max-width: 100%;
+    /* Modificado para adaptarse a contenedores */
     margin: auto;
     border-collapse: collapse;
     font-size: 0.9rem;
@@ -1826,13 +1847,15 @@ html[data-theme="dark"] #theme-toggle-fab .icon-sun {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.8rem;
-    cursor: help; /* Indicador de que tiene tooltip */
+    cursor: help;
+    /* Indicador de que tiene tooltip */
 }
 
 .race-ranking-table .rank-row.user-row {
     font-weight: bold;
     border-left: 4px solid var(--primary-color);
-    background-color: var(--option-hover); /* Resaltar fila usuario */
+    background-color: var(--option-hover);
+    /* Resaltar fila usuario */
 }
 
 .race-ranking-table .rank-icon {

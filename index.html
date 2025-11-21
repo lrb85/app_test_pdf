@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test App</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="volleyball.css">
 </head>
 
 <body>
     <header>
         <h1>Test App</h1>
-        
+
         <!-- Botón de Tema -->
         <button id="theme-toggle-fab" title="Cambiar Tema">
             <span class="icon-sun">☀️</span>
@@ -60,17 +61,23 @@
                 <div id="resume-test-container" class="hidden">
                     <button id="resume-btn">Continuar Examen en Curso</button>
                 </div>
-                
+
                 <!-- Sección para Práctica Global -->
-                <div id="global-practice-container" style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
-                     <h2>Práctica Global</h2>
-                     <p>Realiza un examen con las preguntas que más has fallado en todos los tests.</p>
-                     <div class="exam-item-controls" style="flex-direction: row; justify-content: center; flex-wrap: wrap;">
-                         <button id="practice-top-10-failed-btn" class="practice-failed-btn" disabled>Practicar las 10 más falladas (0)</button>
-                         <button id="practice-top-100-failed-btn" class="practice-failed-btn" disabled>Practicar las 100 más falladas (0)</button>
-                         <button id="practice-recent-failed-btn" class="practice-failed-btn" disabled>Practicar 20 falladas recientemente (0)</button>
-                         <button id="practice-over-50-failed-btn" class="practice-failed-btn" disabled>Practicar >50% Falladas (0)</button>
-                     </div>
+                <div id="global-practice-container"
+                    style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.5rem;">
+                    <h2>Práctica Global</h2>
+                    <p>Realiza un examen con las preguntas que más has fallado en todos los tests.</p>
+                    <div class="exam-item-controls"
+                        style="flex-direction: row; justify-content: center; flex-wrap: wrap;">
+                        <button id="practice-top-10-failed-btn" class="practice-failed-btn" disabled>Practicar las 10
+                            más falladas (0)</button>
+                        <button id="practice-top-100-failed-btn" class="practice-failed-btn" disabled>Practicar las 100
+                            más falladas (0)</button>
+                        <button id="practice-recent-failed-btn" class="practice-failed-btn" disabled>Practicar 20
+                            falladas recientemente (0)</button>
+                        <button id="practice-over-50-failed-btn" class="practice-failed-btn" disabled>Practicar >50%
+                            Falladas (0)</button>
+                    </div>
                 </div>
 
                 <h2>Selecciona un Examen para Realizar</h2>
@@ -104,7 +111,7 @@
                         <button id="finish-btn" class="hidden">Finalizar Examen</button>
                     </div>
                 </div>
-                
+
                 <!-- Overlay de Pausa (Movido aquí dentro para ocultarse al cambiar de vista) -->
                 <div id="pause-overlay" class="hidden">
                     <div class="pause-modal">
@@ -115,6 +122,9 @@
                             <!-- Se rellena con JS -->
                         </div>
                         <button id="resume-overlay-btn">Reanudar Examen</button>
+                        <!-- Botón Jugar Partido en Pausa -->
+                        <button id="play-volley-pause-btn" class="warning-btn" style="width:100%; margin-top:10px;">🏐
+                            Jugar Partido</button>
                     </div>
                 </div>
             </div>
@@ -122,7 +132,7 @@
             <!-- Vista de Resultados -->
             <div id="results-view" class="view">
                 <h2>Resultados del Examen</h2>
-                
+
                 <!-- Resumen Académico + Carrera + Grilla (Todo se inyectará aquí) -->
                 <div id="results-summary"></div>
 
@@ -141,9 +151,9 @@
             <!-- Vista de Estadísticas -->
             <div id="stats-view" class="view">
                 <h2>Tus Estadísticas</h2>
-                
+
                 <div id="readiness-container"></div>
-                
+
                 <div class="stats-controls">
                     <div class="form-group">
                         <label for="stats-exam-select">Selecciona un examen:</label>
@@ -164,7 +174,7 @@
                         <button id="reset-stats-btn">Resetear Estadísticas</button>
                     </div>
                 </div>
-                
+
                 <div id="stats-details"></div>
 
                 <!-- Estadísticas de Carrera -->
@@ -186,7 +196,7 @@
                         <!-- SVG generado por JS -->
                         <p class="no-data-msg">Realiza algunos exámenes para ver tu progreso.</p>
                     </div>
-                    
+
                     <div id="additional-charts-grid" class="charts-grid">
                         <!-- Se rellenará con JS -->
                     </div>
@@ -196,12 +206,54 @@
                 <ul id="failed-questions-list"></ul>
 
             </div>
+            <!-- VISTA DE VOLEIBOL -->
+            <div id="volleyball-view" class="view">
+                <h2>Voleibol 1 vs 1 🏐</h2>
+                <div class="game-wrapper">
+                    <!-- La UI del Juego -->
+                    <div class="game-ui-layer">
+                        <div class="score-board">
+                            <span class="score-name">JUGADOR</span>
+                            <span class="score-val" id="volley-score-player">0</span>
+                        </div>
+                        <div id="volley-timer">10:00</div>
+                        <div class="score-board">
+                            <span class="score-name">RIVAL</span>
+                            <span class="score-val" id="volley-score-opponent">0</span>
+                        </div>
+                    </div>
 
+                    <canvas id="volley-canvas"></canvas>
+
+                    <!-- Pantalla de Selección -->
+                    <div id="volley-selection-screen">
+                        <h3 style="margin-bottom:5px;">Elige tu Jugador</h3>
+                        <p style="font-size:0.9rem; color:#666; margin-bottom:20px;">Usa las flechas y Espacio para
+                            seleccionar</p>
+                        <div id="volley-skill-points" class="skill-points-display">Puntos: 0</div>
+                        <div id="volley-char-container" class="char-grid">
+                            <!-- Se llena con JS -->
+                        </div>
+                    </div>
+
+                    <!-- Overlays (Fin, Tie-break) se mantienen igual ... -->
+                    <div id="volley-overlay-end" class="game-overlay">
+                        <div id="volley-end-title"></div>
+                        <p id="volley-end-msg"></p>
+                        <!-- Modificado para usar el sistema de acceso global -->
+                        <button onclick="window.attemptVolleyAccess(window.lastVolleyContext || 'stats')">Jugar de
+                            Nuevo</button>
+                    </div>
+                    <div id="volley-overlay-tie" class="game-overlay">
+                        <div class="tie-break-question"></div>
+                    </div>
+                </div>
+            </div>
             <!-- Vista de Ajustes -->
             <div id="settings-view" class="view">
                 <h2>Ajustes del Examen</h2>
                 <div class="settings-form">
-                    
+
                     <!-- Selector de Tema -->
                     <div class="form-group">
                         <label>Tema de la Aplicación:</label>
@@ -243,8 +295,8 @@
                             <button data-value="disabled">Desactivado</button>
                         </div>
                     </div>
-                     <!-- Ajuste de la Carrera -->
-                     <div class="form-group">
+                    <!-- Ajuste de la Carrera -->
+                    <div class="form-group">
                         <label>Pista de Atletismo (Izquierda):</label>
                         <div class="btn-group" id="race-setting-group">
                             <button data-value="enabled">Activado</button>
@@ -252,7 +304,7 @@
                         </div>
                     </div>
 
-                     <div class="form-group">
+                    <div class="form-group">
                         <label>Mostrar Imágenes en las Preguntas:</label>
                         <div class="btn-group" id="image-setting-group">
                             <button data-value="yes">Sí</button>
@@ -269,7 +321,8 @@
                 </div>
 
                 <!-- Sección de Importar/Exportar -->
-                <div class="settings-section" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <div class="settings-section"
+                    style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                     <h3>Sincronizar Progreso</h3>
                     <p>Exporta tu examen en curso para continuar en otro dispositivo, o importa un progreso previo.</p>
                     <div class="btn-group">
@@ -281,7 +334,7 @@
                 </div>
             </div>
         </main>
-        
+
         <!-- Panel Lateral (Derecha) -->
         <div id="question-sidebar" class="hidden">
             <button id="sidebar-toggle-btn" title="Ocultar Panel">
@@ -331,7 +384,8 @@
     <div id="reset-modal-overlay" class="modal-overlay hidden">
         <div id="reset-modal-container" class="modal-container">
             <h3>Confirmar Reseteo de Estadísticas</h3>
-            <p>Esta acción es <strong>irreversible</strong> y borrará las estadísticas seleccionadas permanentemente.</p>
+            <p>Esta acción es <strong>irreversible</strong> y borrará las estadísticas seleccionadas permanentemente.
+            </p>
             <p>Para confirmar, escribe la palabra <strong>eliminar</strong> en el campo de abajo.</p>
             <input type="text" id="reset-confirm-input" placeholder="Escribe aquí..." autocomplete="off">
             <div class="reset-modal-footer">
@@ -340,18 +394,48 @@
             </div>
         </div>
     </div>
-    
+
     <div id="restore-modal-overlay" class="modal-overlay hidden">
         <div id="restore-modal-container" class="modal-container">
             <h3>Restaurar Copia de Seguridad</h3>
             <p>Esta acción es <strong>irreversible</strong>.</p>
             <p id="restore-modal-instruction"></p>
             <div id="restore-options-container"></div>
-            <p style="margin-top: 1rem;">Para confirmar la restauración, escribe la palabra <strong>restaurar</strong> en el campo de abajo.</p>
+            <p style="margin-top: 1rem;">Para confirmar la restauración, escribe la palabra <strong>restaurar</strong>
+                en el campo de abajo.</p>
             <input type="text" id="restore-confirm-input" placeholder="Escribe aquí..." autocomplete="off">
             <div class="restore-modal-footer">
                 <button id="restore-cancel-btn">Cancelar</button>
                 <button id="restore-confirm-btn" class="success" disabled>Confirmar Restauración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Límite Diario de Voley -->
+    <div id="volley-limit-modal" class="modal-overlay hidden">
+        <div class="modal-container" style="text-align:center;">
+            <h3 style="color:var(--danger-color); font-size:2rem;">⛔ Límite Alcanzado</h3>
+            <p>Has superado el límite de 10 partidos diarios.</p>
+            <p><strong>Para eliminar este límite:</strong> Debes desbloquear el logro "Voley Infinito" (Aprobar examen
+                de >500 y >800 preguntas con 0 fallos, o esperar al 14/12/2025).</p>
+            <div class="modal-footer" style="justify-content:center;">
+                <button
+                    onclick="document.getElementById('volley-limit-modal').classList.add('hidden')">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Pregunta Guardiana (Quiz antes de jugar) -->
+    <div id="volley-quiz-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <h3 style="color:var(--primary-color);">🏐 Pregunta de Acceso</h3>
+            <p>Para jugar el partido, debes acertar esta pregunta que sueles fallar.</p>
+            <hr style="border:0; border-top:1px solid var(--border-color); margin:10px 0;">
+            <p id="vq-text" style="font-weight:bold; margin-bottom:15px;"></p>
+            <div id="vq-options"></div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <span id="vq-result-msg" style="font-weight:bold;"></span>
+                <button id="vq-cancel-btn" style="background:var(--text-secondary);">Cancelar</button>
             </div>
         </div>
     </div>
@@ -381,6 +465,8 @@
     <script src="exams/H12-811_V1.0_parcial_801_850.js"></script>
     <script src="exams/H12-811_V1.0_parcial_851_900.js"></script>
     <script src="exams/H12-811_V1.0_parcial_901_931.js"></script>
+    <script src="volleyball.js"></script>
+    <script src="script.js"></script>
 </body>
 
 </html>

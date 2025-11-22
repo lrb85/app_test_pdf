@@ -1601,6 +1601,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const finishTest = () => {
         stopTimer();
         const test = appState.currentTest;
+
+        if (test && test.isFinished) return; 
+        
         test.isFinished = true;
     
         let correctCount = 0;

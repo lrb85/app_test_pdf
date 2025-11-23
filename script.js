@@ -3437,6 +3437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.answersRevealed[appState.currentTest.currentIndex] || appState.currentTest.isLocked[appState.currentTest.currentIndex] || appState.currentTest.isPaused) {
             return;
         }
+    /* 
 
         const currentTime = new Date().getTime();
         const timeSinceLastTap = currentTime - lastTapTime;
@@ -3449,6 +3450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         lastTapTime = currentTime;
+*/
         longPressTimer = setTimeout(() => { showAnswer(); }, 1000);
     };
 

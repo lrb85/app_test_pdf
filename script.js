@@ -722,6 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.examData_H12_811_V1_0_full,
             window.examData_H12_811_V1_0_ENU_882,
             window.examData_H12_811_V1_0_extra,
+            window.examData_H12_811_V1_0_VOUCHER,
             window.examData_H12_811_V1_0_p_1_50,
             window.examData_H12_811_V1_0_p_51_100,
             window.examData_H12_811_V1_0_p_101_150,

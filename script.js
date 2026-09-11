@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     window.getTieBreakerQuestion = () => {
-        const failedQs = getGlobalFailedQuestions('count');
+        const failedQs = getGlobalFailedQuestions('count').filter(q => q.type !== 'drag_drop');
         if (failedQs.length > 0) {
             // Coger una aleatoria de las top 10
             const q = failedQs[Math.floor(Math.random() * Math.min(10, failedQs.length))];
@@ -655,7 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
         optsContainer.innerHTML = '';
         
         // Obtener una pregunta fallada (top 10)
-        const failedQs = getGlobalFailedQuestions('count').slice(0, 10);
+        const failedQs = getGlobalFailedQuestions('count').filter(q => q.type !== 'drag_drop').slice(0, 10);
         
         // Si no hay fallos, permitir jugar directo (premio al buen estudiante)
         if (failedQs.length === 0) {
@@ -722,7 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.examData_H12_811_V1_0_full,
             window.examData_H12_811_V1_0_ENU_882,
             window.examData_H12_811_V1_0_extra,
-            window.examData_H12_811_V1_0_VOUCHER,
             window.examData_H12_811_V1_0_p_1_50,
             window.examData_H12_811_V1_0_p_51_100,
             window.examData_H12_811_V1_0_p_101_150,
@@ -743,6 +742,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.examData_H12_811_V1_0_p_801_850,
             window.examData_H12_811_V1_0_p_851_900,
             window.examData_H12_811_V1_0_p_901_931,
+            window.examData_H12_811_V2_0_101,
+            window.examData_H12_811_V2_0_drag_and_drop,
+            window.examData_H12_811_V2_0_verdadero_falso,
         ];
 
         try {
@@ -981,6 +983,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (appState.settings.answerOrder === 'random') {
             questions.forEach(question => {
+                if (question.type === 'drag_drop') {
+                    if (question.drag_items) shuffleArray(question.drag_items);
+                    return;
+                }
                 if (!question.options || question.options.length < 2) return;
                 const originalOptionDetails = question.options.map(opt => ({
                     letter: opt.substring(0, 1),
@@ -1082,6 +1088,218 @@ document.addEventListener('DOMContentLoaded', () => {
         return -1;
     };
 
+    const renderDragDropQuestion = (question, container, isModal = false) => {
+        container.innerHTML = '';
+        const test = appState.currentTest;
+        const isLocked = isModal ? false : (test ? (test.isLocked[test.currentIndex] || test.answersRevealed[test.currentIndex]) : false);
+        const isRevealed = isModal ? false : (test ? test.answersRevealed[test.currentIndex] : false);
+
+        const currentAnswers = isModal ? (container._userDragAnswers || []) : ((test && test.userAnswers[test.currentIndex]) || []);
+        const placedMap = {};
+        currentAnswers.forEach(ans => {
+            const parts = ans.split(' -> ');
+            if (parts.length === 2) {
+                placedMap[parts[0]] = parts[1];
+            }
+        });
+
+        const ddWrapper = document.createElement('div');
+        ddWrapper.className = 'drag-drop-wrapper';
+
+        if (!isRevealed && !isLocked) {
+            const tip = document.createElement('p');
+            tip.className = 'drag-drop-tip';
+            tip.innerHTML = '💡 <em>Arrastra los elementos a su casilla correspondiente, o haz clic en un elemento y luego en una casilla.</em>';
+            ddWrapper.appendChild(tip);
+        }
+
+        const poolContainer = document.createElement('div');
+        poolContainer.className = 'drag-sources-pool';
+
+        const poolTitle = document.createElement('div');
+        poolTitle.className = 'drag-pool-title';
+        poolTitle.textContent = 'Elementos disponibles:';
+        poolContainer.appendChild(poolTitle);
+
+        const itemsWrapper = document.createElement('div');
+        itemsWrapper.className = 'drag-items-container';
+
+        let selectedSourceItem = null;
+
+        const dragItems = question.drag_items || [];
+        dragItems.forEach((itemText) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'drag-item';
+            itemEl.textContent = itemText;
+            itemEl.draggable = !isLocked && !isRevealed;
+
+            itemEl.addEventListener('dragstart', (e) => {
+                if (isLocked || isRevealed) return;
+                e.dataTransfer.setData('text/plain', itemText);
+                itemEl.classList.add('dragging');
+            });
+
+            itemEl.addEventListener('dragend', () => {
+                itemEl.classList.remove('dragging');
+            });
+
+            itemEl.addEventListener('click', () => {
+                if (isLocked || isRevealed) return;
+                if (itemEl.classList.contains('active-select')) {
+                    itemEl.classList.remove('active-select');
+                    selectedSourceItem = null;
+                } else {
+                    itemsWrapper.querySelectorAll('.drag-item').forEach(el => el.classList.remove('active-select'));
+                    itemEl.classList.add('active-select');
+                    selectedSourceItem = itemText;
+                }
+            });
+
+            itemsWrapper.appendChild(itemEl);
+        });
+
+        poolContainer.appendChild(itemsWrapper);
+        ddWrapper.appendChild(poolContainer);
+
+        const targetsContainer = document.createElement('div');
+        targetsContainer.className = 'drop-targets-container';
+
+        const targetsTitle = document.createElement('div');
+        targetsTitle.className = 'drop-targets-title';
+        targetsTitle.textContent = 'Destinos / Correspondencias:';
+        targetsContainer.appendChild(targetsTitle);
+
+        const updateAnswers = () => {
+            const answers = [];
+            question.drop_targets.forEach(t => {
+                const val = placedMap[t.target];
+                if (val) {
+                    answers.push(`${t.target} -> ${val}`);
+                }
+            });
+            if (isModal) {
+                container._userDragAnswers = answers;
+            } else if (test) {
+                test.userAnswers[test.currentIndex] = answers.sort();
+                saveCurrentTestState();
+                updateRace();
+                renderQuestionSidebar();
+
+                if (appState.settings.autoAdvance === 'yes' && answers.length === question.drop_targets.length) {
+                    setTimeout(() => {
+                        changeQuestion(1);
+                    }, 250);
+                }
+            }
+        };
+
+        question.drop_targets.forEach(targetObj => {
+            const targetRow = document.createElement('div');
+            targetRow.className = 'drop-target-row';
+
+            const labelEl = document.createElement('div');
+            labelEl.className = 'drop-target-label';
+            labelEl.innerHTML = targetObj.target.replace(/\n/g, '<br>');
+            targetRow.appendChild(labelEl);
+
+            const slotEl = document.createElement('div');
+            slotEl.className = 'drop-target-slot';
+            slotEl.dataset.target = targetObj.target;
+
+            const renderSlot = () => {
+                slotEl.innerHTML = '';
+                slotEl.classList.remove('filled', 'correct', 'user-incorrect');
+                const existingHint = targetRow.querySelector('.slot-correct-hint');
+                if (existingHint) existingHint.remove();
+
+                const placedVal = placedMap[targetObj.target];
+                if (placedVal) {
+                    slotEl.classList.add('filled');
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'slot-value';
+                    textSpan.textContent = placedVal;
+                    slotEl.appendChild(textSpan);
+
+                    if (!isLocked && !isRevealed) {
+                        const clearBtn = document.createElement('button');
+                        clearBtn.className = 'slot-clear-btn';
+                        clearBtn.innerHTML = '&times;';
+                        clearBtn.title = 'Quitar elemento';
+                        clearBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            delete placedMap[targetObj.target];
+                            renderSlot();
+                            updateAnswers();
+                        });
+                        slotEl.appendChild(clearBtn);
+                    }
+                } else {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'slot-placeholder';
+                    placeholder.textContent = (isLocked || isRevealed) ? 'Sin respuesta' : 'Suelta o selecciona aquí';
+                    slotEl.appendChild(placeholder);
+                }
+
+                if (isRevealed) {
+                    if (placedVal && placedVal.trim() === targetObj.answer.trim()) {
+                        slotEl.classList.add('correct');
+                    } else {
+                        slotEl.classList.add('user-incorrect');
+                        const correctHint = document.createElement('div');
+                        correctHint.className = 'slot-correct-hint';
+                        correctHint.innerHTML = `<strong>Correcto:</strong> ${targetObj.answer.replace(/\n/g, ' ')}`;
+                        targetRow.appendChild(correctHint);
+                    }
+                }
+            };
+
+            renderSlot();
+
+            slotEl.addEventListener('dragover', (e) => {
+                if (isLocked || isRevealed) return;
+                e.preventDefault();
+                slotEl.classList.add('drag-over');
+            });
+
+            slotEl.addEventListener('dragleave', () => {
+                slotEl.classList.remove('drag-over');
+            });
+
+            slotEl.addEventListener('drop', (e) => {
+                if (isLocked || isRevealed) return;
+                e.preventDefault();
+                slotEl.classList.remove('drag-over');
+                const droppedItem = e.dataTransfer.getData('text/plain');
+                if (droppedItem) {
+                    placedMap[targetObj.target] = droppedItem;
+                    renderSlot();
+                    updateAnswers();
+                }
+            });
+
+            slotEl.addEventListener('click', () => {
+                if (isLocked || isRevealed) return;
+                if (selectedSourceItem) {
+                    placedMap[targetObj.target] = selectedSourceItem;
+                    itemsWrapper.querySelectorAll('.drag-item').forEach(el => el.classList.remove('active-select'));
+                    selectedSourceItem = null;
+                    renderSlot();
+                    updateAnswers();
+                } else if (placedMap[targetObj.target]) {
+                    delete placedMap[targetObj.target];
+                    renderSlot();
+                    updateAnswers();
+                }
+            });
+
+            targetRow.appendChild(slotEl);
+            targetsContainer.appendChild(targetRow);
+        });
+
+        ddWrapper.appendChild(targetsContainer);
+        container.appendChild(ddWrapper);
+    };
+
     const renderQuestion = () => {
         const test = appState.currentTest;
         if (!test) return;
@@ -1112,20 +1330,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         optionsContainer.innerHTML = '';
-        question.options.forEach(optionText => {
-            const optionButton = document.createElement('button');
-            optionButton.className = 'option';
-            optionButton.textContent = optionText;
-            optionButton.dataset.value = optionText.substring(0, 1);
+        if (question.type === 'drag_drop') {
+            renderDragDropQuestion(question, optionsContainer);
+        } else {
+            question.options.forEach(optionText => {
+                const optionButton = document.createElement('button');
+                optionButton.className = 'option';
+                optionButton.textContent = optionText;
+                optionButton.dataset.value = optionText.substring(0, 1);
 
-            const userAnswer = test.userAnswers[test.currentIndex];
-            if (userAnswer && userAnswer.includes(optionButton.dataset.value)) {
-                optionButton.classList.add('selected');
-            }
+                const userAnswer = test.userAnswers[test.currentIndex];
+                if (userAnswer && userAnswer.includes(optionButton.dataset.value)) {
+                    optionButton.classList.add('selected');
+                }
 
-            optionButton.addEventListener('click', () => selectAnswer(optionButton));
-            optionsContainer.appendChild(optionButton);
-        });
+                optionButton.addEventListener('click', () => selectAnswer(optionButton));
+                optionsContainer.appendChild(optionButton);
+            });
+        }
 
         if (test.isLocked[test.currentIndex]) {
             optionsContainer.classList.add('locked');
@@ -1937,6 +2159,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getFullAnswerText = (question, answerLetters) => {
         if (!answerLetters || answerLetters.length === 0) return 'No respondida';
+        if (question.type === 'drag_drop') {
+            return answerLetters.map(item => `• ${item.replace(/\n/g, ' ')}`).join('<br>');
+        }
         return answerLetters.map(letter => {
             return question.options.find(opt => opt.startsWith(letter)) || letter;
         }).join('<br>');
@@ -1963,6 +2188,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const userAnswer = test.userAnswers[test.currentIndex] || [];
 
         test.answersRevealed[test.currentIndex] = true;
+
+        if (question.type === 'drag_drop') {
+            renderDragDropQuestion(question, optionsContainer);
+            showAnswerBtn.disabled = true;
+            renderQuestionSidebar();
+            updateRace();
+            return;
+        }
 
         optionsContainer.querySelectorAll('.option').forEach(opt => {
             const optValue = opt.dataset.value;
@@ -3167,25 +3400,61 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCorrectAnswer.innerHTML = '';
         modalCheckBtn.disabled = false;
 
-        question.options.forEach(optionText => {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'option';
-            optionDiv.textContent = optionText;
-            optionDiv.dataset.value = optionText.substring(0, 1);
-            optionDiv.addEventListener('click', () => {
-                if (question.type === 'single') {
-                    modalOptionsContainer.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                    optionDiv.classList.add('selected');
-                } else {
-                    optionDiv.classList.toggle('selected');
-                }
+        if (question.type === 'drag_drop') {
+            renderDragDropQuestion(question, modalOptionsContainer, true);
+        } else {
+            question.options.forEach(optionText => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = optionText;
+                optionDiv.dataset.value = optionText.substring(0, 1);
+                optionDiv.addEventListener('click', () => {
+                    if (question.type === 'single') {
+                        modalOptionsContainer.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                        optionDiv.classList.add('selected');
+                    } else {
+                        optionDiv.classList.toggle('selected');
+                    }
+                });
+                modalOptionsContainer.appendChild(optionDiv);
             });
-            modalOptionsContainer.appendChild(optionDiv);
-        });
+        }
         modalOverlay.classList.remove('hidden');
     };
 
     const checkModalAnswer = () => {
+        if (modalCurrentQuestion.type === 'drag_drop') {
+            const placedMap = {};
+            (modalOptionsContainer._userDragAnswers || []).forEach(ans => {
+                const parts = ans.split(' -> ');
+                if (parts.length === 2) placedMap[parts[0]] = parts[1];
+            });
+
+            modalOptionsContainer.querySelectorAll('.drop-target-row').forEach(row => {
+                const slot = row.querySelector('.drop-target-slot');
+                if (slot) {
+                    const target = slot.dataset.target;
+                    const targetObj = modalCurrentQuestion.drop_targets.find(t => t.target === target);
+                    const userVal = placedMap[target];
+                    if (targetObj) {
+                        if (userVal && userVal.trim() === targetObj.answer.trim()) {
+                            slot.classList.add('correct');
+                        } else {
+                            slot.classList.add('user-incorrect');
+                            if (!row.querySelector('.slot-correct-hint')) {
+                                const hint = document.createElement('div');
+                                hint.className = 'slot-correct-hint';
+                                hint.innerHTML = `<strong>Correcto:</strong> ${targetObj.answer.replace(/\n/g, ' ')}`;
+                                row.appendChild(hint);
+                            }
+                        }
+                    }
+                }
+            });
+            modalCheckBtn.disabled = true;
+            return;
+        }
+
         const selectedOptions = [...modalOptionsContainer.querySelectorAll('.option.selected')];
         const selectedAnswers = selectedOptions.map(opt => opt.dataset.value).sort();
         const correctAnswers = [...modalCurrentQuestion.correct_answers].sort();
@@ -3438,7 +3707,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.currentView !== 'test-view' || !appState.currentTest || appState.currentTest.answersRevealed[appState.currentTest.currentIndex] || appState.currentTest.isLocked[appState.currentTest.currentIndex] || appState.currentTest.isPaused) {
             return;
         }
-    /* 
 
         const currentTime = new Date().getTime();
         const timeSinceLastTap = currentTime - lastTapTime;
@@ -3451,7 +3719,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         lastTapTime = currentTime;
-*/
         longPressTimer = setTimeout(() => { showAnswer(); }, 1000);
     };
 

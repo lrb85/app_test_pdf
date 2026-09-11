@@ -437,7 +437,7 @@ window.examData_H12_811_V1_0_p_901_931 = {
         "C"
       ],
       "type": "single",
-      "image": "placeholder_q633.png"
+      "image": "image_633.png"
     },
     {
       "id": 291,
@@ -452,7 +452,7 @@ window.examData_H12_811_V1_0_p_901_931 = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q634.png"
+      "image": "image_634.png"
     },
     {
       "id": 292,
@@ -467,7 +467,7 @@ window.examData_H12_811_V1_0_p_901_931 = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q635.png"
+      "image": "image_635.png"
     }
   ]
 }

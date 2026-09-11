@@ -309,7 +309,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q80.png"
+      "image": "image_80.png"
     },
     {
       "id": 22,
@@ -324,7 +324,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q81.png"
+      "image": "image_81.png"
     },
     {
       "id": 23,
@@ -339,7 +339,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "single",
-      "image": "placeholder_q83.png"
+      "image": "image_83.png"
     },
     {
       "id": 24,
@@ -514,7 +514,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "single",
-      "image": "placeholder_q116.png"
+      "image": "image_116.png"
     },
     {
       "id": 36,
@@ -545,7 +545,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "single",
-      "image": "placeholder_q121.png"
+      "image": "image_121.png"
     },
     {
       "id": 38,
@@ -561,7 +561,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "multiple",
-      "image": "placeholder_q123.png"
+      "image": "image_123.png"
     },
     {
       "id": 39,
@@ -604,7 +604,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q131.png"
+      "image": "image_131.png"
     },
     {
       "id": 42,
@@ -653,7 +653,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "multiple",
-      "image": "placeholder_q141.png"
+      "image": "image_141.png"
     },
     {
       "id": 45,
@@ -792,7 +792,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "multiple",
-      "image": "placeholder_q179.png"
+      "image": "image_179.png"
     },
     {
       "id": 54,
@@ -1126,7 +1126,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "multiple",
-      "image": "placeholder_q235.png"
+      "image": "image_235.png"
     },
     {
       "id": 76,
@@ -1156,7 +1156,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q255.png"
+      "image": "image_255.png"
     },
     {
       "id": 78,
@@ -1232,7 +1232,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q269.png"
+      "image": "image_269.png"
     },
     {
       "id": 83,
@@ -1425,7 +1425,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q484.png"
+      "image": "image_484.png"
     },
     {
       "id": 96,
@@ -1581,7 +1581,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q503.png"
+      "image": "image_503.png"
     },
     {
       "id": 107,
@@ -1673,7 +1673,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "multiple",
-      "image": "placeholder_q509.png"
+      "image": "image_509.png"
     },
     {
       "id": 113,
@@ -1688,7 +1688,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q510.png"
+      "image": "image_510.png"
     },
     {
       "id": 114,
@@ -1986,7 +1986,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q531.png"
+      "image": "image_531.png"
     },
     {
       "id": 134,
@@ -2016,7 +2016,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q533.png"
+      "image": "image_533.png"
     },
     {
       "id": 136,
@@ -2234,7 +2234,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "single",
-      "image": "placeholder_q548.png"
+      "image": "image_548.png"
     },
     {
       "id": 151,
@@ -2247,7 +2247,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q549.png"
+      "image": "image_549.png"
     },
     {
       "id": 152,
@@ -2445,7 +2445,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q562.png"
+      "image": "image_562.png"
     },
     {
       "id": 165,
@@ -2805,7 +2805,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q587.png"
+      "image": "image_587.png"
     },
     {
       "id": 189,
@@ -2818,7 +2818,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q588.png"
+      "image": "image_588.png"
     },
     {
       "id": 190,
@@ -2880,7 +2880,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q534.png"
+      "image": "image_534.png"
     },
     {
       "id": 194,
@@ -2910,7 +2910,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q536.png"
+      "image": "image_536.png"
     },
     {
       "id": 196,
@@ -2925,7 +2925,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "single",
-      "image": "placeholder_q537.png"
+      "image": "image_537.png"
     },
     {
       "id": 197,
@@ -3060,7 +3060,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q546.png"
+      "image": "image_546.png"
     },
     {
       "id": 206,
@@ -3075,7 +3075,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q547.png"
+      "image": "image_547.png"
     },
     {
       "id": 207,
@@ -3090,7 +3090,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q548.png"
+      "image": "image_548.png"
     },
     {
       "id": 208,
@@ -3105,7 +3105,7 @@ window.examData_H12_811_V1_0_extra = {
         "B"
       ],
       "type": "single",
-      "image": "placeholder_q549.png"
+      "image": "image_549.png"
     },
     {
       "id": 209,
@@ -3255,7 +3255,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "single",
-      "image": "placeholder_q559.png"
+      "image": "image_559.png"
     },
     {
       "id": 219,
@@ -3285,7 +3285,7 @@ window.examData_H12_811_V1_0_extra = {
         "D"
       ],
       "type": "single",
-      "image": "placeholder_q561.png"
+      "image": "image_561.png"
     },
     {
       "id": 221,
@@ -3330,7 +3330,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q564.png"
+      "image": "image_564.png"
     },
     {
       "id": 224,
@@ -4332,7 +4332,7 @@ window.examData_H12_811_V1_0_extra = {
         "C"
       ],
       "type": "single",
-      "image": "placeholder_q633.png"
+      "image": "image_633.png"
     },
     {
       "id": 291,
@@ -4347,7 +4347,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q634.png"
+      "image": "image_634.png"
     },
     {
       "id": 292,
@@ -4362,7 +4362,7 @@ window.examData_H12_811_V1_0_extra = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q635.png"
+      "image": "image_635.png"
     }
   ]
 }

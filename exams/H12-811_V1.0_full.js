@@ -6727,7 +6727,7 @@ window.examData_H12_811_V1_0_full = {
         "A"
       ],
       "type": "single",
-      "image": "placeholder_q451.png"
+      "image": ["placeholder_q451.png", "placeholder_q451_2.png" ]
     },
     {
       "id": 452,

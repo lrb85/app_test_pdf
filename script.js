@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     let appState = {
         currentView: 'selector-view',
+        examFilter: 'all',
         exams: {},
         settings: {
             timeLimit: 0,
@@ -719,6 +720,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loaderStatus.textContent = 'Cargando exámenes...';
 
         const examDataSources = [
+            window.examData_H12_811_V2_0_101,
+            window.examData_H12_811_V2_0_drag_and_drop,
+            window.examData_H12_811_V2_0_verdadero_falso,
+            window.examData_H12_811_V1_0_VOUCHER,
             window.examData_H12_811_V1_0_full,
             window.examData_H12_811_V1_0_ENU_882,
             window.examData_H12_811_V1_0_extra,
@@ -742,9 +747,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.examData_H12_811_V1_0_p_801_850,
             window.examData_H12_811_V1_0_p_851_900,
             window.examData_H12_811_V1_0_p_901_931,
-            window.examData_H12_811_V2_0_101,
-            window.examData_H12_811_V2_0_drag_and_drop,
-            window.examData_H12_811_V2_0_verdadero_falso,
         ];
 
         try {
@@ -806,15 +808,56 @@ document.addEventListener('DOMContentLoaded', () => {
             practiceOver50FailedBtn.textContent = `Practicar >50% Falladas (0)`;
         }
 
+        const isV2Exam = (exam) => {
+            const code = (exam.exam_code || '').toUpperCase();
+            const name = (exam.exam_name || '').toUpperCase();
+            return code.includes('V2') || name.includes('V2');
+        };
 
-        Object.values(appState.exams).forEach(exam => {
+        const currentFilter = appState.examFilter || 'all';
+
+        // Sincronizar botones de pestañas
+        const tabBtns = document.querySelectorAll('#exam-version-tabs .exam-tab-btn');
+        tabBtns.forEach(btn => {
+            if (btn.dataset.version === currentFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        let examsList = Object.values(appState.exams);
+
+        // Ordenar: Exámenes V2 siempre arriba del todo
+        examsList.sort((a, b) => {
+            const aV2 = isV2Exam(a);
+            const bV2 = isV2Exam(b);
+            if (aV2 && !bV2) return -1;
+            if (!aV2 && bV2) return 1;
+            return 0;
+        });
+
+        // Filtrar según la pestaña seleccionada
+        if (currentFilter === 'v2') {
+            examsList = examsList.filter(exam => isV2Exam(exam));
+        } else if (currentFilter === 'v1') {
+            examsList = examsList.filter(exam => !isV2Exam(exam));
+        }
+
+        if (examsList.length === 0) {
+            examListContainer.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-secondary);">No hay exámenes disponibles en esta categoría.</div>';
+            return;
+        }
+
+        examsList.forEach(exam => {
+            const isV2 = isV2Exam(exam);
             const failedCount = appState.stats[exam.exam_code] ? Object.keys(appState.stats[exam.exam_code].failedQuestions).length : 0;
 
             const examItem = document.createElement('div');
-            examItem.className = 'exam-item';
+            examItem.className = `exam-item ${isV2 ? 'v2-exam' : ''}`;
             examItem.innerHTML = `
             <div class="exam-item-info">
-            <h4>${exam.exam_name} (${exam.exam_code})</h4>
+            <h4>${exam.exam_name} (${exam.exam_code}) ${isV2 ? '<span class="badge-v2">V2.0</span>' : ''}</h4>
             <div class="question-count-selector">
             <label for="q-count-${exam.exam_code}">Nº de preguntas:</label>
             <input type="number" class="question-count-input" id="q-count-${exam.exam_code}" value="${exam.questions.length}" min="1" max="${exam.questions.length}">
@@ -3883,6 +3926,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.attemptVolleyAccess('pause');
             });
         }
+
+        // Listeners para las pestañas de versiones de exámenes (Todos / V2.0 / V1.0)
+        const examVersionTabBtns = document.querySelectorAll('#exam-version-tabs .exam-tab-btn');
+        examVersionTabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                appState.examFilter = e.currentTarget.dataset.version;
+                renderExamSelector();
+            });
+        });
     };
 
     init();

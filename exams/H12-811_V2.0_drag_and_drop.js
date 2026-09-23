@@ -2,7 +2,7 @@ window.examData_H12_811_V2_0_drag_and_drop = {
   "exam_code": "H12-811_V2.0_drag_and_drop",
   "exam_name": "HCIA-Datacom V2.0 - Drag and Drop",
   "provider": "Huawei",
-  "version": "v2026-09-11",
+  "version": "v2026-09-23",
   "questions": [
     {
       "id": 1,
@@ -398,6 +398,48 @@ window.examData_H12_811_V2_0_drag_and_drop = {
         "3 -> DHCP REQUEST",
         "4 -> DHCP ACK"
       ]
+    },
+    {
+      "id": 10,
+      "question_text": "You define the following function in Python:\n\ndef add(a, b, c)  \nreturn a + b + c\n\nYou then add the following code. To ensure the code executes correctly, arrange the code in sequence.",
+      "type": "drag_drop",
+      "drag_items": [
+        "a = 3",
+        "b = a + 3",
+        "c = a + b",
+        "print(add(a,b,c))"
+      ],
+      "drop_targets": [
+        {
+          "target": "1",
+          "answer": "a = 3"
+        },
+        {
+          "target": "2",
+          "answer": "b = a + 3"
+        },
+        {
+          "target": "3",
+          "answer": "c = a + b"
+        },
+        {
+          "target": "4",
+          "answer": "print(add(a,b,c))"
+        }
+      ],
+      "correct_answers": [
+        "1 -> a = 3",
+        "2 -> b = a + 3",
+        "3 -> c = a + b",
+        "4 -> print(add(a,b,c))"
+      ],
+      "options": [
+        "1 -> a = 3",
+        "2 -> b = a + 3",
+        "3 -> c = a + b",
+        "4 -> print(add(a,b,c))"
+      ],
+      "image": null
     }
   ]
 };

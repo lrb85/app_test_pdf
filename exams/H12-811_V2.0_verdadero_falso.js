@@ -2,7 +2,7 @@ window.examData_H12_811_V2_0_verdadero_falso = {
   "exam_code": "H12-811_V2.0_verdadero_falso",
   "exam_name": "HCIA-Datacom V2.0 - Verdadero y Falso",
   "provider": "Huawei",
-  "version": "v2026-09-11",
+  "version": "v2026-09-23",
   "questions": [
     {
       "id": 1,
@@ -501,6 +501,292 @@ window.examData_H12_811_V2_0_verdadero_falso = {
     {
       "id": 39,
       "question_text": "A router ID uniquely identifies a device in an AS and must exist before the device can run OSPF. When a device runs OSPFv2 and no router ID is manually configured, the system automatically chooses one.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 40,
+      "question_text": "PC1 is a DHCP client that receives a dynamic IP address from the DHCP server (the IP-address lease duration is 24 hours). The DHCP server is then powered off for more than a week because of a fault. In this situation, PC1 can keep using the previously assigned IP address for that entire period.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 41,
+      "question_text": "Defining OSPF areas in a large network helps reduce the size of the LSDB each router maintains. If both R1 and R2 are assigned to area 1, they share the same LSDB within that area.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 42,
+      "question_text": "After the following commands are configured, R1 has two equal-cost routes to 10.0.12.0/24.\n\n[R1] ip route static 10.0.12.0.24 10.0.12.2 preference 60  \n[R1] ip route-static 10.0.12.0.24 10.0.21.2 preference 60",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q107.png"
+    },
+    {
+      "id": 43,
+      "question_text": "In a leader AP networking architecture, the leader AP acts as a WAC and uses the CAPWAP protocol to centrally manage and configure Fit APs.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 44,
+      "question_text": "In the network shown, R1 has this static route configured:  \n  \n[R1] ip route-static 10.0.12.0 24 10.0.12.2 preference 60  \n  \nTherefore, the route to 10.0.12.0/24 in R1’s routing table has a priority value of 60.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q122.png"
+    },
+    {
+      "id": 45,
+      "question_text": "The following ACL rule is configured on R1:\n\n[R1] time-range working-time 8:00 to 18:00 working-day  \n[R1] acl name work-acl basic  \n[R1-acl4-basic-work-acl] rule deny source 192.168.1.0 0.0.0.255 time-range working-time  \n[R1-acl4-basic-work-acl] quit\n\nBased on this rule, hosts whose source IP addresses are in the 192.168.1.0/24 network segment match the rule from 8:00 to 18:00 on workdays.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 46,
+      "question_text": "An administrator configures an Eth-Trunk in LACP mode between two switches and sets the maximum number of active links in the Eth-Trunk to 3, with 1 remaining standby link. If an active link fails, the two switches automatically negotiate the number of active links down to 2, while the standby link stays in the standby state.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 47,
+      "question_text": "When preparing to log in to a Huawei CloudEngine S series switch for the first time, a network administrator cannot use the console port to log in to the switch and access the CLI because the switch has factory settings.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 48,
+      "question_text": "In Layer 3 in-path WLAN networking, the WAC and Fit APs connect at Layer 3. APs can acquire the WAC’s address through broadcast or DHCP.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 49,
+      "question_text": "In the network shown, S1 acts as the gateway for R1, R2, and R3, and all three of its interfaces are access interfaces. When S1 forwards a packet from R1 to R3, it must consult the routing table.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q133.png"
+    },
+    {
+      "id": 50,
+      "question_text": "If host A needs to communicate with host B on a different subnet, host A broadcasts an ARP request to learn host B’s MAC address. After it receives the request, host B sends an ARP response informing host A of its MAC address.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 51,
+      "question_text": "In an IPv6 address, two or more adjacent groups of 0s may be compressed with a double colon (::), which reduces the address’s overall length. For example, 2001:DBFF:130F:0:0:0:0:130B can be shortened to 2001:DBFF:130F::130B.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 52,
+      "question_text": "Given the following Python code, is the output of print(Test) the same as the output of print(test)?\n\nTest = ‘Hello World’  \ntest = ‘hello world’",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 53,
+      "question_text": "In TCP/IP end-to-end communication, only the source and destination hosts handle the header information added at the transport layer. Routers on the path will certainly not handle that information.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 54,
+      "question_text": "The following command is configured on R1’s VTY interfaces.  \n  \n[R1-ui-vty0-4] protocol inbound all  \n  \nIn this case, FTP, Telnet, and SSH users can all use the five VTY interfaces.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 55,
+      "question_text": "Under the 802.11 standard, the 2.4 GHz frequency band is split into 14 overlapping, staggered 20 MHz channels, numbered 1 through 14.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 56,
+      "question_text": "The figure illustrates a simplified enterprise campus network topology. In this network, the aging time for dynamic MAC address entries on switches is 300 seconds. The administrator connects PC1 to GE1/0/1 on SW1, and PC2 successfully pings PC1's IP address. The administrator disconnects PC1's Ethernet cable from GE1/0/1 on SW1, immediately reconnects the cable to GE1/0/2 on SW1, and connects GE1/0/1 on SW1 to another switch. The administrator then pings PC1's IP address from PC2. In this situation, SW1 discards the data frame received from PC2.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q160.png"
+    },
+    {
+      "id": 57,
+      "question_text": "R1 has the following configuration:\n\n[R1] aaa  \n[R1-aaa] authentication-scheme auth1  \n[R1-aaa-authen-auth1] authentication-mode radius local  \n[R1-aaa-authen-auth1] quit\n\nBased on the preceding information, assume that R1 is correctly connected to the RADIUS server. When a user accesses R1, R1 first performs RADIUS authentication for that user. If the RADIUS server returns an authentication-failure message to R1, R1 subsequently performs local authentication for the user.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 58,
+      "question_text": "In contrast with distance-vector routing protocols, link-state routing protocols advertise link states rather than route information. Common link-state routing protocols include RIP, OSPF, and IS-IS.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 59,
+      "question_text": "To avoid network congestion resulting from loops, the IP header contains a TTL field. The source device sets the initial TTL value, and it is reduced by 1 whenever the IP packet is forwarded by a Layer 2 or Layer 3 device. When the TTL reaches 0, the packet is discarded.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 60,
+      "question_text": "In a Fat AP networking architecture, Fat APs can provide wireless user access without WAC management, making them suitable for situations such as homes and mini stores.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 61,
+      "question_text": "In an intelligent-computing data-center network, several intelligent lossless-network technologies are used to ensure zero packet loss. PFC works as follows: when the packet buffer at the data-receiving end reaches the backpressure threshold, the receiving end sends PFC frames to the transmitting end, instructing it to stop sending packets.",
       "options": [
         "A. TRUE",
         "B. FALSE"

@@ -1,8 +1,8 @@
 window.examData_H12_811_V2_0_101 = {
   "exam_code": "H12-811_V2.0_101",
-  "exam_name": "HCIA-Datacom V2.0 - 101 Preguntas",
+  "exam_name": "HCIA-Datacom V2.0 - 161 Preguntas",
   "provider": "Huawei",
-  "version": "v2026-09-11",
+  "version": "v2026-09-23",
   "questions": [
     {
       "id": 1,
@@ -1745,6 +1745,923 @@ window.examData_H12_811_V2_0_101 = {
       ],
       "type": "single",
       "image": "q101.png"
+    },
+    {
+      "id": 102,
+      "question_text": "Which command can an administrator run to set the configuration file for the next startup?",
+      "options": [
+        "A. startup system-software",
+        "B. startup saved-configuration",
+        "C. reset factory-configuration",
+        "D. reset saved-configuration"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 104,
+      "question_text": "PC1 is a DHCP client that receives a dynamic IP address from the DHCP server (the IP-address lease duration is 24 hours). The DHCP server is then powered off for more than a week because of a fault. In this situation, PC1 can keep using the previously assigned IP address for that entire period.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 105,
+      "question_text": "AAA uses a client/server architecture. Which of the following protocols is unsupported between the client and server?",
+      "options": [
+        "A. MD5",
+        "B. HWTACACS",
+        "C. LDAP",
+        "D. RADIUS"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 106,
+      "question_text": "Defining OSPF areas in a large network helps reduce the size of the LSDB each router maintains. If both R1 and R2 are assigned to area 1, they share the same LSDB within that area.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 107,
+      "question_text": "After the following commands are configured, R1 has two equal-cost routes to 10.0.12.0/24.\n\n[R1] ip route static 10.0.12.0.24 10.0.12.2 preference 60  \n[R1] ip route-static 10.0.12.0.24 10.0.21.2 preference 60",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q107.png"
+    },
+    {
+      "id": 108,
+      "question_text": "Which of the following hosts can be reached at Layer 2 by the host at 192.168.1.200/27? (Choose three)",
+      "options": [
+        "A. 192.168.1.192/27",
+        "B. 192.168.1.193/27",
+        "C. 192.168.1.221/27",
+        "D. 192.168.1.222/27"
+      ],
+      "correct_answers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 109,
+      "question_text": "As data-center services continue to be updated and developed, the architecture of general-purpose computing data-center networks is evolving as well. A cloud data center uses a cloud platform to centrally integrate resources and provide compute, storage, and network services. Which of the following network architectures does this type of data center use?",
+      "options": [
+        "A. M-LAG + Eth-Trunk",
+        "B. Spine-Leaf + VXLAN",
+        "C. PEC + ECN",
+        "D. STP + VRRP"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 110,
+      "question_text": "You define the following function in Python:\n\ndef add(a, b, c)  \nreturn a + b + c\n\nYou then add the following code. To ensure the code executes correctly, arrange the code in sequence.",
+      "type": "drag_drop",
+      "drag_items": [
+        "a = 3",
+        "b = a + 3",
+        "c = a + b",
+        "print(add(a,b,c))"
+      ],
+      "drop_targets": [
+        {
+          "target": "1",
+          "answer": "a = 3"
+        },
+        {
+          "target": "2",
+          "answer": "b = a + 3"
+        },
+        {
+          "target": "3",
+          "answer": "c = a + b"
+        },
+        {
+          "target": "4",
+          "answer": "print(add(a,b,c))"
+        }
+      ],
+      "correct_answers": [
+        "1 -> a = 3",
+        "2 -> b = a + 3",
+        "3 -> c = a + b",
+        "4 -> print(add(a,b,c))"
+      ],
+      "options": [
+        "1 -> a = 3",
+        "2 -> b = a + 3",
+        "3 -> c = a + b",
+        "4 -> print(add(a,b,c))"
+      ],
+      "image": null
+    },
+    {
+      "id": 111,
+      "question_text": "In a leader AP networking architecture, the leader AP acts as a WAC and uses the CAPWAP protocol to centrally manage and configure Fit APs.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 112,
+      "question_text": "In the figure, the router provides only network connectivity between the web client and web server, and every device is connected by Ethernet cables. When the web client sends an HTTP request to the web server, which layers’ header information in that HTTP request will the router inspect or modify? (Choose two)",
+      "options": [
+        "A. Application layer",
+        "B. Transport layer",
+        "C. Data link layer",
+        "D. Network layer"
+      ],
+      "correct_answers": [
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": "q112.png"
+    },
+    {
+      "id": 113,
+      "question_text": "The administrator has completed the configuration shown for SW1. Which of the following configurations can enable Layer 2 communication between PC1 and PC2? (Choose two)",
+      "options": [
+        "A. Configure GE1/0/2 as a hybrid interface, add it to VLAN 10 in tagged mode, and set its PVID to VLAN 10.",
+        "B. Configure GE1/0/2 as an access interface and set its PVID to VLAN 10.",
+        "C. Configure GE1/0/2 as a trunk interface, configure it to allow packets from VLAN 10 to pass through, and set its PVID to VLAN 10.",
+        "D. Configure GE1/0/2 as a hybrid interface, add it to VLAN 10 in untagged mode, and retain the default PVID."
+      ],
+      "correct_answers": [
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": "q113.png"
+    },
+    {
+      "id": 114,
+      "question_text": "R1 has four static routes, and every one has a reachable next hop. Given this static-route configuration, which next hop is used for the route to 20.0.0.0/30 in R1’s routing table?\n\n[R1] ip route-static 20.0.0.0 30 10.1.1.2  \n[R1] ip route-static 20.0.0.0 30 10.1.2.2 preference 70  \n[R1] ip route-static 20.0.0.0 30 10.1.3.2 preference 100  \n[R1] ip route-static 20.0.0.0 30 10.1.4.2 preference 50",
+      "options": [
+        "A. 10.1.4.2",
+        "B. 10.1.2.2",
+        "C. 10.1.1.2",
+        "D. 10.1.3.2"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 115,
+      "question_text": "After the root bridge has been elected in an STP network, which of the following parameters can ports on non-root bridge nodes compare to choose the root port? (Choose four)",
+      "options": [
+        "A. PID of a port on the device that sends BPDUs.",
+        "B. PID of a port on the local device.",
+        "C. BID of the device that sends BPDUs.",
+        "D. Root path cost (RPC)"
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 116,
+      "question_text": "The emergence of AI creates new demands for data center networks. To satisfy AI-computing requirements, a high-speed intelligent-computing data center network with zero packet loss must be built. Which of the following statements about the requirements and solutions for intelligent-computing data center networks are false? (Choose two)",
+      "options": [
+        "A. Due to large-scale data synchronization services on the intelligent computing network, a single port must have a high bandwidth (200G/400G).",
+        "B. Lossless technologies such as PFC and ECN are used on the intelligent computing network to implement a network with zero packet loss.",
+        "C. The RDMA protocol stack is used on the intelligent computing network to reduce the transmission latency between GPU servers and physical switches.",
+        "D. Measures such as single-port ultimate bandwidth and lossless network technologies can be used to achieve a network with close to zero packet loss, but not a truly lossless network."
+      ],
+      "correct_answers": [
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 117,
+      "question_text": "The network administrator configures SW1 and SW2 as shown. Which statement about this scenario is false?",
+      "options": [
+        "A. When SW2 processes a data frame sent from PC1 to PC3 internally, the data frame carries the VLAN 2 tag.",
+        "B. When SW2 processes a data frame sent from PC2 to PC4 internally, the data frame carries the VLAN 3 tag.",
+        "C. When forwarding a data frame sent from PC2 to PC4, SW1 removes the VLAN tag and then sends the data frame.",
+        "D. When forwarding a data frame sent from PC1 to PC3, SW1 removes the VLAN tag and then sends the data frame."
+      ],
+      "correct_answers": [
+        "C"
+      ],
+      "type": "single",
+      "image": "q117.png"
+    },
+    {
+      "id": 118,
+      "question_text": "Which of the following items can a DHCPv4 client receive from a DHCPv4 server? (Choose four)",
+      "options": [
+        "A. IPv4 address",
+        "B. DNS address",
+        "C. Address lease",
+        "D. Gateway address"
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 119,
+      "question_text": "Relative to Wi‑Fi 6, which of the following technologies does Wi‑Fi 7 use to enhance performance? (Choose three)",
+      "options": [
+        "A. 4096-QAM modulation",
+        "B. Multi-RU",
+        "C. Multi-link",
+        "D. MU-MIMO"
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 120,
+      "question_text": "In the figure, a web client sends an HTTP request to a web server, while the router between them performs operations on that HTTP request. Which of the following statements about the router’s operations are false? (Choose three)",
+      "options": [
+        "A. The router checks the content of the application layer data and determines the port from which to send the data.",
+        "B. The router encapsulates a new destination IP address before sending the data.",
+        "C. The router searches the IP routing table based on the port number in the transport layer header.",
+        "D. The router removes the data frame header and checks the destination IP address."
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": "q120.png"
+    },
+    {
+      "id": 121,
+      "question_text": "If PC1 receives an IPv6 address by using SLAAC, what is the network prefix length of the address received by PC1?",
+      "options": [
+        "A. 96",
+        "B. 64",
+        "C. 32",
+        "D. 48"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 122,
+      "question_text": "In the network shown, R1 has this static route configured:  \n  \n[R1] ip route-static 10.0.12.0 24 10.0.12.2 preference 60  \n  \nTherefore, the route to 10.0.12.0/24 in R1’s routing table has a priority value of 60.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q122.png"
+    },
+    {
+      "id": 124,
+      "question_text": "The following ACL rule is configured on R1:\n\n[R1] time-range working-time 8:00 to 18:00 working-day  \n[R1] acl name work-acl basic  \n[R1-acl4-basic-work-acl] rule deny source 192.168.1.0 0.0.0.255 time-range working-time  \n[R1-acl4-basic-work-acl] quit\n\nBased on this rule, hosts whose source IP addresses are in the 192.168.1.0/24 network segment match the rule from 8:00 to 18:00 on workdays.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 125,
+      "question_text": "Which of the following protocols may be used to modify a network device's configuration? (Choose three)",
+      "options": [
+        "A. NETCONF",
+        "B. Syslog",
+        "C. RESTCONF",
+        "D. SNMP"
+      ],
+      "correct_answers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 126,
+      "question_text": "An administrator configures an Eth-Trunk in LACP mode between two switches and sets the maximum number of active links in the Eth-Trunk to 3, with 1 remaining standby link. If an active link fails, the two switches automatically negotiate the number of active links down to 2, while the standby link stays in the standby state.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 127,
+      "question_text": "In the network shown, when Host A sends data frames, which of the following destination MAC addresses can be received simultaneously by both Host B and Host C? (Choose two)",
+      "options": [
+        "A. FF-FF-FF-FF-FF-FF",
+        "B. 98-10-C2-00-00-01",
+        "C. 53-80-C2-00-00-01",
+        "D. 34-01-C2-00-00-01"
+      ],
+      "correct_answers": [
+        "A",
+        "C"
+      ],
+      "type": "multiple",
+      "image": "q127.png"
+    },
+    {
+      "id": 128,
+      "question_text": "R1 has the following configuration:\n\n[R1] acl 3000  \n[R1-acl4-advance-3000] rule 5 deny ip source 10.0.1.1 0.7.0.0  \n[R1-acl4-advance-3000] rule 30 permit ip  \n[R1-acl4-advance-3000] quit\n\nPackets from which of the following source IP addresses can match rule 30? (Choose two)",
+      "options": [
+        "A. 10.5.1.1",
+        "B. 10.10.1.1",
+        "C. 10.4.0.0",
+        "D. 10.6.1.1"
+      ],
+      "correct_answers": [
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 129,
+      "question_text": "In the network shown, switch-to-terminal interfaces are access interfaces, while switch-to-switch interfaces are trunk interfaces. The administrator configures interface-based VLAN assignment. PC1 and PC3 are in VLAN 2, and PC2 and PC4 are in VLAN 3. Trunk interfaces permit VLAN 2 and VLAN 3 traffic and use the default PVID. The switches’ MAC address tables are empty. When SW1 receives a unicast data frame from PC1 to PC3, through which interfaces does SW1 **not** forward the frame? (Choose two)",
+      "options": [
+        "A. GE1/0/2",
+        "B. GE1/0/3",
+        "C. GE1/0/4",
+        "D. GE1/0/1"
+      ],
+      "correct_answers": [
+        "A",
+        "D"
+      ],
+      "type": "multiple",
+      "image": "q129.png"
+    },
+    {
+      "id": 130,
+      "question_text": "When preparing to log in to a Huawei CloudEngine S series switch for the first time, a network administrator cannot use the console port to log in to the switch and access the CLI because the switch has factory settings.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 131,
+      "question_text": "In Layer 3 in-path WLAN networking, the WAC and Fit APs connect at Layer 3. APs can acquire the WAC’s address through broadcast or DHCP.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 132,
+      "question_text": "The IPv6 header, also known as the fixed header, consists of eight fields and has a total length of 40 bytes. Which of the following fields are included in an IPv6 header? (Choose three)",
+      "options": [
+        "A. Source IPv6 address",
+        "B. Hop Limit",
+        "C. Next Header",
+        "D. Source MAC address"
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 133,
+      "question_text": "In the network shown, S1 acts as the gateway for R1, R2, and R3, and all three of its interfaces are access interfaces. When S1 forwards a packet from R1 to R3, it must consult the routing table.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q133.png"
+    },
+    {
+      "id": 134,
+      "question_text": "IEEE 802.11 is the standard for WLANs. Which of the following 802.11 protocols uses 1024-QAM modulation?",
+      "options": [
+        "A. 802.11n",
+        "B. 802.11be",
+        "C. 802.11ac",
+        "D. 802.11ax"
+      ],
+      "correct_answers": [
+        "D"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 135,
+      "question_text": "The administrator applies the configuration shown on SW1 and SW2. Initially, PC1 is connected to GE1/0/1 on SW1. After the network becomes stable, the administrator pings the IP addresses of PC2 and PC3 from PC1. Later, the administrator connects PC1 to GE1/0/2 on SW1. After the network becomes stable, the administrator again pings the IP addresses of PC2 and PC3 from PC1.  \n  \nWhich statement about this scenario is false?",
+      "options": [
+        "A. After PC1 is connected to GE1/0/2 of SW1, PC1 cannot ping PC2 or PC3.",
+        "B. When PC1 is connected to GE1/0/1 of SW1 and the ping operation is performed, the mapping between the MAC address of PC1, VLAN 10, and the MAC address of GE1/0/1 is generated on SW1.",
+        "C. After PC1 is connected to GE1/0/2 of SW1, PC1 can communicate with PC3 only.",
+        "D. When PC1 is connected to GE1/0/1 of SW1, PC1 can communicate with PC2 only."
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": "q135.png"
+    },
+    {
+      "id": 136,
+      "question_text": "If host A needs to communicate with host B on a different subnet, host A broadcasts an ARP request to learn host B’s MAC address. After it receives the request, host B sends an ARP response informing host A of its MAC address.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 137,
+      "question_text": "In the network shown, interfaces connecting switches to terminals are access interfaces, whereas interfaces connecting switches to one another are trunk interfaces. The administrator configures VLAN assignment based on interfaces. PC1 and PC3 are in VLAN 2, and PC2 and PC4 are in VLAN 3. Trunk interfaces permit packets from VLAN 2 and VLAN 3 to pass and use the default PVID. When PC2 sends a data frame to PC4, the administrator captures the frame on the link between SW1 and SW2. Which statement about this data frame is correct?",
+      "options": [
+        "A. The data frame carries the VLAN 1 tag.",
+        "B. The data frame does not carry any VLAN tag.",
+        "C. The data frame carries the VLAN 3 tag.",
+        "D. The data frame carries the VLAN 2 tag."
+      ],
+      "correct_answers": [
+        "C"
+      ],
+      "type": "single",
+      "image": "q137.png"
+    },
+    {
+      "id": 138,
+      "question_text": "Based on the OSPF neighbor information for R1 shown below, which of the following statements about R1 is false?",
+      "options": [
+        "A. R1 has the smallest router ID.",
+        "B. R1 is not a DR.",
+        "C. GE0/0/0 belongs to area 0.",
+        "D. R1 is not a DROther."
+      ],
+      "correct_answers": [
+        "D"
+      ],
+      "type": "single",
+      "image": "q138.png"
+    },
+    {
+      "id": 139,
+      "question_text": "The figure below illustrates part of a campus-network topology and its associated addressing plan. The interconnected physical interfaces permit only traffic from the interconnection VLANs, and the corresponding VLANIF interfaces have been configured. OSPF is deployed throughout the campus network to provide Layer 3 connectivity, and STP is enabled. Which of the following statements are correct? (Choose two)",
+      "options": [
+        "A. If GE1/0/3 of ACC2 is an alternate port, no OSPF neighbor relationship can be established between ACC1 and ACC2.",
+        "B. If GE1/0/3 of ACC2 is an alternate port, ACC1 learns the route of 10.1.23.0/24 through OSPF.",
+        "C. The IP routing table of Core1 contains IP routes of three interconnection network segments.",
+        "D. As the network is a Layer 3 network, the STP function configured by the administrator is invalid."
+      ],
+      "correct_answers": [
+        "A",
+        "C"
+      ],
+      "type": "multiple",
+      "image": "q139.png"
+    },
+    {
+      "id": 141,
+      "question_text": "When WLAN services are configured on a Huawei WAC using profile-based configuration mode, different WLAN profiles serve different functions and reference one another to take effect. Which statement about WLAN-profile reference relationships is false?",
+      "options": [
+        "A. An authentication profile can be referenced in a VAP profile.",
+        "B. A security profile can be referenced in an SSID profile.",
+        "C. An SSID profile can be referenced in a VAP profile.",
+        "D. An air scan profile can be referenced in a radio profile."
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 142,
+      "question_text": "For the network 192.168.1.15/25, which of the following is the lowest IP address that can be assigned to a host?",
+      "options": [
+        "A. 192.168.1.127",
+        "B. 192.168.1.120",
+        "C. 192.168.1.1",
+        "D. 192.168.1.255"
+      ],
+      "correct_answers": [
+        "C"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 143,
+      "question_text": "Which of the following NAT modes translates an IP packet’s destination IP address?",
+      "options": [
+        "A. NAT Server",
+        "B. Easy IP",
+        "C. NAPT",
+        "D. No-PAT"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 144,
+      "question_text": "In an IPv6 address, two or more adjacent groups of 0s may be compressed with a double colon (::), which reduces the address’s overall length. For example, 2001:DBFF:130F:0:0:0:0:130B can be shortened to 2001:DBFF:130F::130B.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 145,
+      "question_text": "Secure Shell (SSH) is a protocol that uses encryption and authentication mechanisms to securely provide network services, such as secure access and file transfer, over an insecure network. Which of the following protocols use SSH? (Choose three)",
+      "options": [
+        "A. SFTP",
+        "B. DNS",
+        "C. STelnet",
+        "D. NETCONF"
+      ],
+      "correct_answers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 146,
+      "question_text": "Given the following Python code, is the output of print(Test) the same as the output of print(test)?\n\nTest = ‘Hello World’  \ntest = ‘hello world’",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 148,
+      "question_text": "In TCP/IP end-to-end communication, only the source and destination hosts handle the header information added at the transport layer. Routers on the path will certainly not handle that information.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 149,
+      "question_text": "If the neighbor relationship between R1 and R2 has reached the Full state, which of the following statements is true? (Choose three)",
+      "options": [
+        "A. R1 and R2 have different router IDs.",
+        "B. R1 and R2 have the same LSDB in the same area.",
+        "C. R1 and R2 belong to the same area.",
+        "D. R1 and R2 use the same process ID."
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 150,
+      "question_text": "The following command is configured on R1’s VTY interfaces.  \n  \n[R1-ui-vty0-4] protocol inbound all  \n  \nIn this case, FTP, Telnet, and SSH users can all use the five VTY interfaces.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 151,
+      "question_text": "Network administrators must manage and maintain devices on the campus network. Which of the following protocols cannot change device configurations, such as interface IP addresses, device names, and so on?",
+      "options": [
+        "A. SNMP",
+        "B. SFTP",
+        "C. STelnet",
+        "D. NETCONF"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 152,
+      "question_text": "When configuring wireless services on a Huawei WAC, a service VLAN must be configured to ensure that STA data packets are transmitted properly. In which of the following profiles is the service VLAN configured?",
+      "options": [
+        "A. Security profile",
+        "B. Regulatory domain profile",
+        "C. VAP profile",
+        "D. SSID profile"
+      ],
+      "correct_answers": [
+        "C"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 154,
+      "question_text": "In the network shown, GE1/0/1, GE1/0/2, and GE1/0/3 on SW1 are directly connected to SW2, while GE1/0/4 on SW1 is directly connected to SW3. The administrator runs the interface eth-trunk 1 command on SW1 and SW2 to create an Eth-Trunk and increase link bandwidth. Which statements about this scenario are correct? (Choose three)",
+      "options": [
+        "A. If the administrator configures an Eth-Trunk in LACP mode and adds all interfaces of SW1 to the Eth-Trunk, no traffic will be forwarded to SW3 through GE1/0/4 of SW1.",
+        "B. If the administrator configures an Eth-Trunk in manual mode and adds all interfaces of SW1 to the Eth-Trunk, traffic may be forwarded to SW3 through GE1/0/4 of SW1.",
+        "C. If the administrator configures an Eth-Trunk in manual mode and adds all interfaces of SW1 to the Eth-Trunk, the Eth-Trunk will go Down.",
+        "D. If the administrator configures an Eth-Trunk in LACP mode and adds all interfaces of SW1 to the Eth-Trunk, the Eth-Trunk will go up."
+      ],
+      "correct_answers": [
+        "A",
+        "B",
+        "D"
+      ],
+      "type": "multiple",
+      "image": "q154.png"
+    },
+    {
+      "id": 155,
+      "question_text": "Under the 802.11 standard, the 2.4 GHz frequency band is split into 14 overlapping, staggered 20 MHz channels, numbered 1 through 14.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 156,
+      "question_text": "In the network shown, R1 acts as the gateway for PC2 and PC3 and is directly connected to S1 by a physical link. GE1/0/1 on S1 is configured as a trunk interface that allows VLANs 2 and 3, and its PVID remains at the default value. Which statements are true if PC2 and PC3 can communicate with each other? (Choose three)",
+      "options": [
+        "A. S1 has ARP entries of PC2 and PC3.",
+        "B. R1 can terminate data frames of VLANs 2 and 3.",
+        "C. S1 has MAC address entries of PC2 and PC3.",
+        "D. Sub interfaces GE0/0/1.2 and GE0/0/1.3 have been created on R1."
+      ],
+      "correct_answers": [
+        "B",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": "q156.png"
+    },
+    {
+      "id": 157,
+      "question_text": "Which of the following is **not** an OSPF packet type?",
+      "options": [
+        "A. LSAck",
+        "B. LSU",
+        "C. Hello",
+        "D. LSA"
+      ],
+      "correct_answers": [
+        "D"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 158,
+      "question_text": "When source NAT is configured on an enterprise egress device, which of the following can stop intranet users from reaching the public network? (Choose three)",
+      "options": [
+        "A. The NAT function is not enabled on the device’s outbound interface connected to the public network.",
+        "B. No route to the intranet address is configured on the public network router.",
+        "C. No IP address is available in the NAT address pool.",
+        "D. The IP address of an intranet user is out of the IP address range specified in the NAT policy."
+      ],
+      "correct_answers": [
+        "A",
+        "C",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 160,
+      "question_text": "The figure illustrates a simplified enterprise campus network topology. In this network, the aging time for dynamic MAC address entries on switches is 300 seconds. The administrator connects PC1 to GE1/0/1 on SW1, and PC2 successfully pings PC1's IP address. The administrator disconnects PC1's Ethernet cable from GE1/0/1 on SW1, immediately reconnects the cable to GE1/0/2 on SW1, and connects GE1/0/1 on SW1 to another switch. The administrator then pings PC1's IP address from PC2. In this situation, SW1 discards the data frame received from PC2.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": "q160.png"
+    },
+    {
+      "id": 161,
+      "question_text": "R1 has the following configuration:\n\n[R1] aaa  \n[R1-aaa] authentication-scheme auth1  \n[R1-aaa-authen-auth1] authentication-mode radius local  \n[R1-aaa-authen-auth1] quit\n\nBased on the preceding information, assume that R1 is correctly connected to the RADIUS server. When a user accesses R1, R1 first performs RADIUS authentication for that user. If the RADIUS server returns an authentication-failure message to R1, R1 subsequently performs local authentication for the user.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 165,
+      "question_text": "In contrast with distance-vector routing protocols, link-state routing protocols advertise link states rather than route information. Common link-state routing protocols include RIP, OSPF, and IS-IS.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 166,
+      "question_text": "To avoid network congestion resulting from loops, the IP header contains a TTL field. The source device sets the initial TTL value, and it is reduced by 1 whenever the IP packet is forwarded by a Layer 2 or Layer 3 device. When the TTL reaches 0, the packet is discarded.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "B"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 167,
+      "question_text": "Which of the following IP addresses cannot, by default, be configured on a host?",
+      "options": [
+        "A. 192.168.1.1/24",
+        "B. 10.0.0.1/8",
+        "C. 224.0.0.1/24",
+        "D. 172.16.1.1/16"
+      ],
+      "correct_answers": [
+        "C"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 168,
+      "question_text": "Which of these DHCPv4 messages does a DHCPv4 server send? (Choose two)",
+      "options": [
+        "A. DHCP ACK",
+        "B. DHCP DISCOVER",
+        "C. DHCP REQUEST",
+        "D. DHCP OFFER"
+      ],
+      "correct_answers": [
+        "A",
+        "D"
+      ],
+      "type": "multiple",
+      "image": null
+    },
+    {
+      "id": 169,
+      "question_text": "In a Fat AP networking architecture, Fat APs can provide wireless user access without WAC management, making them suitable for situations such as homes and mini stores.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
+    },
+    {
+      "id": 170,
+      "question_text": "In an intelligent-computing data-center network, several intelligent lossless-network technologies are used to ensure zero packet loss. PFC works as follows: when the packet buffer at the data-receiving end reaches the backpressure threshold, the receiving end sends PFC frames to the transmitting end, instructing it to stop sending packets.",
+      "options": [
+        "A. TRUE",
+        "B. FALSE"
+      ],
+      "correct_answers": [
+        "A"
+      ],
+      "type": "single",
+      "image": null
     }
   ]
 };
